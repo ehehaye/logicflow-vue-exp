@@ -1,0 +1,16 @@
+# Normalize line endings across platforms.
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+
+# Generated files
+pnpm-lock.yaml linguist-generated=true
+dist/** linguist-generated=true
