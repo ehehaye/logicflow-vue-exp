@@ -27,7 +27,6 @@ coverage/
 # Caches
 .cache/
 .temp/
-.eslintcache
 
 # Editor and OS files
 .DS_Store

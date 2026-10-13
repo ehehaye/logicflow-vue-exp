@@ -1,48 +1,19 @@
 {
-  "cSpell.words": [
-    "logicflow"
-  ],
-  // 使用 ESLint 替代默认格式化器
-  "prettier.enable": false,
-  "editor.formatOnSave": false,
-  // 保存时自动应用 ESLint 修复（含格式化）
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit",
-    "source.organizeImports": "never"
+  // 将prettier设置为默认格式化程序(在编辑器中有可能被其他Formatter占用，所以将prettier设置为默认Formatter)
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // 保存时自动格式化 (根据根目录下‘.prettierrc文件配置项’)
+  "editor.formatOnSave": true,
+  // Enable per-language
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
   },
-  // 在 IDE 中静默风格类规则，但仍会在保存时自动修复
-  "eslint.rules.customizations": [
-    { "rule": "style/*", "severity": "off", "fixable": true },
-    { "rule": "format/*", "severity": "off", "fixable": true },
-    { "rule": "*-indent", "severity": "off", "fixable": true },
-    { "rule": "*-spacing", "severity": "off", "fixable": true },
-    { "rule": "*-spaces", "severity": "off", "fixable": true },
-    { "rule": "*-order", "severity": "off", "fixable": true },
-    { "rule": "*-dangle", "severity": "off", "fixable": true },
-    { "rule": "*-newline", "severity": "off", "fixable": true },
-    { "rule": "*quotes", "severity": "off", "fixable": true },
-    { "rule": "*semi", "severity": "off", "fixable": true }
-  ],
-  // 让 ESLint 处理所有受支持的语言
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact",
-    "vue",
-    "html",
-    "markdown",
-    "json",
-    "jsonc",
-    "yaml",
-    "toml",
-    "xml",
-    "gql",
-    "graphql",
-    "css",
-    "less",
-    "scss",
-    "pcss",
-    "postcss"
-  ]
+  "[vue]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // 为ESLint启用“保存时自动修复”，并且仍然具有格式和快速修复功能
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.fixAll.eslint": "explicit"
+  }
 }
