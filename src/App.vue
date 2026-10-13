@@ -1,9 +1,36 @@
-<script>
-import EditorSidebar from './components/EditorSidebar.vue'
-import FlowCanvas from './components/FlowCanvas.vue'
-import JsonDialog from './components/JsonDialog.vue'
+<template>
+  <main class="tw-min-h-screen tw-p-7">
+    <FlowCanvas
+      ref="flow"
+      :readonly.sync="flowReadonly"
+      :raw-data="rawData"
+      @export="onExport"
+    >
+      <template #sidebar="slotProps">
+        <EditorSidebar
+          :selected-node-label="slotProps.selectedNodeLabel"
+          :has-selected-node="slotProps.hasSelectedNode"
+          :readonly="slotProps.readonly"
+          @update-label="slotProps.updateLabel"
+        />
+      </template>
+    </FlowCanvas>
 
-export default {
+    <JsonDialog
+      :visible="jsonVisible"
+      :json="graphJson"
+      @close="jsonVisible = false"
+    />
+  </main>
+</template>
+
+<script>
+import { defineComponent } from 'vue';
+import EditorSidebar from './components/EditorSidebar.vue';
+import FlowCanvas from './components/FlowCanvas.vue';
+import JsonDialog from './components/JsonDialog.vue';
+
+export default defineComponent({
   name: 'App',
   components: {
     EditorSidebar,
@@ -15,27 +42,20 @@ export default {
       jsonVisible: false,
       graphJson: '',
       flowReadonly: false,
-    }
+      rawData: {
+        nodes: [
+          { id: 'start', type: 'circle', x: 430, y: 130, text: '开始' },
+          { id: 'task', type: 'rect', x: 430, y: 290, text: '处理订单' },
+        ],
+        edges: [{ id: 'start-to-task', type: 'polyline', sourceNodeId: 'start', targetNodeId: 'task' }],
+      },
+    };
   },
   methods: {
     onExport(json) {
-      this.graphJson = json
-      this.jsonVisible = true
+      this.graphJson = json;
+      this.jsonVisible = true;
     },
   },
-}
+});
 </script>
-
-<template>
-  <main class="tw-min-h-screen tw-p-7">
-    <FlowCanvas ref="flow" :readonly.sync="flowReadonly" @export="onExport">
-      <template #sidebar="slotProps">
-        <EditorSidebar :selected-node-label="slotProps.selectedNodeLabel"
-          :has-selected-node="slotProps.hasSelectedNode" :readonly="slotProps.readonly"
-          @update-label="slotProps.updateLabel" />
-      </template>
-    </FlowCanvas>
-
-    <JsonDialog :visible="jsonVisible" :json="graphJson" @close="jsonVisible = false" />
-  </main>
-</template>
