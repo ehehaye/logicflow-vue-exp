@@ -1,46 +1,34 @@
-:root {
-  color: #17213a;
-  background: #edf1f8;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color: #17213a;
+    background: #edf1f8;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  /* 保证工具栏在窗口过窄时不换行错位 */
+  body {
+    min-width: 960px;
+  }
 }
 
-* { box-sizing: border-box; }
-body { margin: 0; min-width: 960px; }
-button { font: inherit; }
-
-.app-shell { min-height: 100vh; padding: 28px; }
-.topbar, .workspace { max-width: 1440px; margin: 0 auto; }
-.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
-.eyebrow, .section-label { margin: 0; color: #7d8aa6; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
-h1, h2, p { margin-top: 0; }
-h1 { margin-bottom: 0; font-size: 28px; letter-spacing: -.04em; }
-h2 { margin-bottom: 7px; font-size: 18px; letter-spacing: -.025em; }
-.topbar-actions { display: flex; gap: 10px; }
-.primary-button, .ghost-button, .danger-button { border: 0; border-radius: 9px; cursor: pointer; font-weight: 700; padding: 10px 14px; }
-.primary-button { color: white; background: #4465e8; box-shadow: 0 7px 16px #4465e833; }
-.ghost-button { color: #485672; background: white; border: 1px solid #dbe1ee; }
-.danger-button { color: #b63242; background: #fff1f3; border: 1px solid #ffd5da; }
-.primary-button:disabled, .ghost-button:disabled, .danger-button:disabled { color: #a8b1c3; cursor: not-allowed; background: #edf0f5; border-color: #edf0f5; box-shadow: none; }
-.workspace { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: calc(100vh - 128px); overflow: hidden; background: white; border: 1px solid #dfe5f0; border-radius: 16px; box-shadow: 0 18px 50px #24335312; }
-.sidebar { display: flex; flex-direction: column; gap: 12px; padding: 24px 18px; background: #f8faff; border-right: 1px solid #e3e8f1; }
-.hint { margin-bottom: 10px; color: #71809c; font-size: 13px; line-height: 1.55; }
-.selected-card { padding: 14px; background: white; border: 1px solid #e0e6f0; border-radius: 10px; }
-.selected-card strong, .selected-card small { display: block; }
-.selected-card strong { margin-top: 7px; color: #27334d; font-size: 14px; }
-.selected-card small { margin-top: 5px; color: #8190a9; font-size: 12px; line-height: 1.5; }
-.tips { margin-top: auto; padding-top: 20px; color: #72809a; font-size: 12px; line-height: 1.6; border-top: 1px solid #e5eaf2; }
-.tips ol { margin: 8px 0 0; padding-left: 18px; }
-.canvas-panel { display: flex; position: relative; flex-direction: column; min-width: 0; }
-.canvas-meta { display: flex; justify-content: space-between; padding: 14px 20px; color: #71809a; font-size: 12px; background: #fff; border-bottom: 1px solid #e8edf5; }
-.status-dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #38c791; }
-.flow-canvas { flex: 1; min-height: 620px; }
-.dialog-mask { display: grid; position: fixed; z-index: 10; inset: 0; padding: 30px; place-items: center; background: #17213a66; }
-.json-dialog { width: min(760px, 100%); max-height: calc(100vh - 60px); padding: 22px; overflow: auto; background: white; border-radius: 14px; box-shadow: 0 20px 60px #17213a44; }
-.dialog-header { display: flex; align-items: flex-start; justify-content: space-between; }
-.dialog-header h2 { margin: 4px 0 0; }.close-button { width: 32px; height: 32px; color: #63708a; cursor: pointer; background: #f0f3f8; border: 0; border-radius: 8px; font-size: 22px; line-height: 1; }
-pre { margin: 18px 0 0; padding: 16px; overflow: auto; color: #c7d2eb; background: #151d31; border-radius: 9px; font: 12px/1.6 "SFMono-Regular", Consolas, monospace; }
-
-/* Keep LogicFlow's built-in shapes consistent with the demo palette. */
+/* LogicFlow 以命令式方式注入节点/连线 DOM，无法使用带 tw- 前缀的工具类，
+   因此其内置形状统一在此用 `.lf-*` 覆盖，以贴合 demo 配色。 */
+/* 节点文本 */
 .lf-node-text { font-size: 14px; fill: #223151; }
+/* 基础节点形状：矩形 / 圆形 / 多边形 */
 .lf-base-node rect, .lf-base-node circle, .lf-base-node polygon { fill: #fff; stroke: #6f87dc; stroke-width: 1.5; }
+/* 选中节点：实心高亮 */
+.lf-node-selected .lf-basic-shape { fill: #4465e8; stroke: #4465e8; }
+.lf-node-selected text { fill: #fff; }
+/* 连线 */
 .lf-edge-path { stroke: #7084c9; stroke-width: 1.5; }
+/* 光标样式随编辑 / 只读模式切换 */
+.flow-canvas--editable .lf-node { cursor: pointer; }
+.flow-canvas--readonly .lf-node { cursor: default; }
+
+/* 工具栏改用 Element 按钮 + flex gap 统一间距，重置按钮之间的默认外边距 */
+.flow-toolbar .el-button + .el-button { margin-left: 0; }
