@@ -17,12 +17,12 @@
 
 ## 技术栈
 
-| 类别 | 选型 |
-| --- | --- |
-| 框架 | Vue 2.7 |
+| 类别     | 选型                                               |
+| -------- | -------------------------------------------------- |
+| 框架     | Vue 2.7                                            |
 | 流程引擎 | [LogicFlow](https://github.com/didi/LogicFlow) 2.x |
-| 构建工具 | Vite 7 |
-| 包管理器 | pnpm |
+| 构建工具 | Vite 7                                             |
+| 包管理器 | pnpm                                               |
 
 ## 环境要求
 
@@ -43,6 +43,9 @@ pnpm build
 
 # 预览构建产物
 pnpm preview
+
+# 格式化代码（Prettier）
+pnpm format
 ```
 
 开发服务器默认地址见终端输出（通常为 `http://localhost:5173`）。
@@ -84,29 +87,29 @@ window.flowDemo.toggleEditable()
 
 ## 组件 API（`FlowCanvas`）
 
-| 属性 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `readonly` | `Boolean` | `false` | 只读模式；内部 watch 该属性并同步节点交互与只读样式 |
-| `readonlySelectable` | `Boolean` | `true` | 只读模式下是否仍允许选中节点；设为 `false` 时只读节点完全不响应点击 |
+| 属性                 | 类型      | 默认值  | 说明                                                                |
+| -------------------- | --------- | ------- | ------------------------------------------------------------------- |
+| `readonly`           | `Boolean` | `false` | 只读模式；内部 watch 该属性并同步节点交互与只读样式                 |
+| `readonlySelectable` | `Boolean` | `true`  | 只读模式下是否仍允许选中节点；设为 `false` 时只读节点完全不响应点击 |
 
-| 事件 | 载荷 | 说明 |
-| --- | --- | --- |
-| `node-add` | 新节点数据 | 新增节点后触发 |
-| `node-delete` | 被删除节点 id | 删除节点后触发 |
-| `canvas-clear` | — | 清空画布后触发 |
-| `selection-change` | `{ id, label } \| null` | 选中节点变化时触发 |
-| `export` | JSON 字符串 | 导出图数据时触发 |
-| `update:readonly` | `Boolean` | 切换只读状态时触发，支持 `:readonly.sync` |
+| 事件               | 载荷                    | 说明                                      |
+| ------------------ | ----------------------- | ----------------------------------------- |
+| `node-add`         | 新节点数据              | 新增节点后触发                            |
+| `node-delete`      | 被删除节点 id           | 删除节点后触发                            |
+| `canvas-clear`     | —                       | 清空画布后触发                            |
+| `selection-change` | `{ id, label } \| null` | 选中节点变化时触发                        |
+| `export`           | JSON 字符串             | 导出图数据时触发                          |
+| `update:readonly`  | `Boolean`               | 切换只读状态时触发，支持 `:readonly.sync` |
 
 作用域插槽 `sidebar` 会把当前选中节点的状态暴露给插槽内容：
 
-| 插槽 prop | 类型 | 说明 |
-| --- | --- | --- |
-| `selectedNodeId` | `String \| null` | 当前选中节点 id |
-| `selectedNodeLabel` | `String` | 当前选中节点名称（无选中时为「未选择节点」） |
-| `hasSelectedNode` | `Boolean` | 是否存在选中节点 |
-| `readonly` | `Boolean` | 当前是否只读 |
-| `updateLabel` | `(label: String) => void` | 更新选中节点名称 |
+| 插槽 prop           | 类型                      | 说明                                         |
+| ------------------- | ------------------------- | -------------------------------------------- |
+| `selectedNodeId`    | `String \| null`          | 当前选中节点 id                              |
+| `selectedNodeLabel` | `String`                  | 当前选中节点名称（无选中时为「未选择节点」） |
+| `hasSelectedNode`   | `Boolean`                 | 是否存在选中节点                             |
+| `readonly`          | `Boolean`                 | 当前是否只读                                 |
+| `updateLabel`       | `(label: String) => void` | 更新选中节点名称                             |
 
 ```html
 <flow-canvas :readonly.sync="readonly">
@@ -123,14 +126,14 @@ window.flowDemo.toggleEditable()
 
 ## 组件 API（`EditorSidebar`）
 
-| 属性 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `selectedNodeLabel` | `String` | `'未选择节点'` | 当前选中节点名称，绑定输入框 |
-| `hasSelectedNode` | `Boolean` | `false` | 是否存在选中节点，控制输入框禁用 |
-| `readonly` | `Boolean` | `false` | 只读时输入框禁用 |
+| 属性                | 类型      | 默认值         | 说明                             |
+| ------------------- | --------- | -------------- | -------------------------------- |
+| `selectedNodeLabel` | `String`  | `'未选择节点'` | 当前选中节点名称，绑定输入框     |
+| `hasSelectedNode`   | `Boolean` | `false`        | 是否存在选中节点，控制输入框禁用 |
+| `readonly`          | `Boolean` | `false`        | 只读时输入框禁用                 |
 
-| 事件 | 载荷 | 说明 |
-| --- | --- | --- |
+| 事件           | 载荷         | 说明                                   |
+| -------------- | ------------ | -------------------------------------- |
 | `update-label` | 输入框最新值 | 输入框变更时触发，用于更新选中节点名称 |
 
 ## 说明
