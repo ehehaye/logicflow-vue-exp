@@ -11,12 +11,32 @@
           @node-delete="onNodeDelete"
           @node-update="onNodeUpdate"
           @canvas-clear="onCanvasClear"
+          @graph-data-update="graphData = $event"
         />
       </LogicFlow>
-      <NodeEditor
-        :node="selectedNode"
-        @update="onUpdateNode"
-      />
+      <aside class="tw-flex tw-flex-col tw-gap-3 tw-py-6 tw-px-[18px] tw-bg-[#f8faff] tw-border-l tw-border-[#e3e8f1]">
+        <div class="tw-p-[14px] tw-bg-white tw-border tw-border-[#e0e6f0] tw-rounded-[10px]">
+          <p class="tw-text-[11px] tw-font-extrabold tw-tracking-[.12em] tw-text-[#7d8aa6]">当前选择</p>
+          <el-input
+            v-if="selectedNode"
+            :value="selectedNode.getData().text.value"
+            class="tw-mt-[7px]"
+            @input="onNodeEditorInput"
+          />
+          <small
+            v-else
+            class="tw-block tw-mt-[5px] tw-text-xs tw-leading-[1.5] tw-text-[#8190a9]"
+          >
+            请先在画布中选择一个节点。
+          </small>
+          <button
+            class="tw-mt-3 tw-w-full tw-rounded-lg tw-border tw-border-[#e0e6f0] tw-bg-[#f8faff] tw-px-3 tw-py-1.5 tw-text-xs tw-font-medium tw-text-[#5a6b8c] tw-transition-colors hover:tw-border-[#c8d4f0] hover:tw-bg-[#eef3ff]"
+            @click="onInspect"
+          >
+            inspect data
+          </button>
+        </div>
+      </aside>
     </div>
   </main>
 </template>
@@ -25,26 +45,20 @@
 import { defineComponent } from 'vue';
 import LogicFlow from '@/components/lf/LogicFlow.vue';
 import Pipeline from '@/components/lf/scenes/pipeline/index.vue';
-import NodeEditor from '@/views/design/modules/NodeEditor.vue';
+import { toGraphData, toRawData } from '@/components/lf/scenes/pipeline/transform.js';
 
-// 初始流水线数据：由业务方提供，场景组件只负责编排，不关心业务内容。
-const INITIAL_GRAPH_DATA = {
-  nodes: [
-    { id: 'start', type: 'circle', x: 430, y: 130, text: '开始' },
-    { id: 'task', type: 'rect', x: 430, y: 290, text: '处理订单' },
-  ],
-  edges: [{ id: 'start-to-task', type: 'polyline', sourceNodeId: 'start', targetNodeId: 'task' }],
-};
+// 业务方提供的原始节点数据：只关心节点文案，id / 类型 / 坐标 / 连线由 transform.js 补齐。
+const INITIAL_RAW_DATA = [{ text: '开始' }, { text: '处理订单' }];
 
 export default defineComponent({
   components: {
     LogicFlow,
     Pipeline,
-    NodeEditor,
   },
   data() {
     return {
-      graphData: INITIAL_GRAPH_DATA,
+      rawData: INITIAL_RAW_DATA,
+      graphData: toGraphData(INITIAL_RAW_DATA),
       selectedNode: null,
     };
   },
@@ -54,6 +68,10 @@ export default defineComponent({
     },
     onUpdateNode({ id, text }) {
       this.$refs.pipeline.updateNode(id, text);
+    },
+    onNodeEditorInput(text) {
+      const id = this.selectedNode?.getData()?.id;
+      if (id) this.onUpdateNode({ id, text });
     },
     onNodeAdd(data) {
       console.log('[node-add]', data);
@@ -66,6 +84,19 @@ export default defineComponent({
     },
     onCanvasClear() {
       console.log('[canvas-clear]');
+    },
+    onInspect() {
+      const { graphData } = this;
+      const rawData = toRawData(this.graphData);
+      console.log(
+        '[inspect]',
+        JSON.parse(
+          JSON.stringify({
+            graphData,
+            rawData,
+          }),
+        ),
+      );
     },
   },
 });
