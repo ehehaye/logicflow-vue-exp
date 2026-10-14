@@ -15,5 +15,14 @@
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
     "source.fixAll.eslint": "explicit"
-  }
+  },
+  "reasonix.model": "deepseek/deepseek-v4-pro",
+  "cSpell.words": [
+    "Dagre",
+    "Hitable",
+    "logicflow",
+    "nodesep",
+    "rankdir",
+    "ranksep"
+  ]
 }
