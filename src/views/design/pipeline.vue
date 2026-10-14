@@ -3,26 +3,31 @@
     <div
       class="tw-grid tw-grid-cols-flow-editor tw-min-h-flow-panel tw-overflow-hidden tw-bg-white tw-border tw-border-[#dfe5f0] tw-rounded-2xl tw-shadow-panel tw-max-w-[1440px] tw-mx-auto"
     >
-      <LogicFlow :graph-data="graphData">
+      <LogicFlow :graph-data.sync="graphData">
         <Pipeline
           ref="pipeline"
           @select="onSelect"
           @node-add="onNodeAdd"
           @node-delete="onNodeDelete"
-          @node-update="onNodeUpdate"
           @canvas-clear="onCanvasClear"
-          @graph-data-update="graphData = $event"
         />
       </LogicFlow>
       <aside class="tw-flex tw-flex-col tw-gap-3 tw-py-6 tw-px-[18px] tw-bg-[#f8faff] tw-border-l tw-border-[#e3e8f1]">
         <div class="tw-p-[14px] tw-bg-white tw-border tw-border-[#e0e6f0] tw-rounded-[10px]">
           <p class="tw-text-[11px] tw-font-extrabold tw-tracking-[.12em] tw-text-[#7d8aa6]">当前选择</p>
-          <el-input
-            v-if="selectedNode"
-            :value="selectedNode.getData().text.value"
-            class="tw-mt-[7px]"
-            @input="onNodeEditorInput"
-          />
+          <template v-if="node">
+            <el-input
+              :value="node.text.value"
+              class="tw-mt-[7px]"
+              @input="node.updateText($event)"
+            />
+            <el-input
+              :value="node.properties.test"
+              class="tw-mt-[7px]"
+              @input="node.setProperties({ test: $event })"
+            />
+          </template>
+
           <small
             v-else
             class="tw-block tw-mt-[5px] tw-text-xs tw-leading-[1.5] tw-text-[#8190a9]"
@@ -42,13 +47,14 @@
 </template>
 
 <script>
+import _ from 'lodash';
 import { defineComponent } from 'vue';
 import LogicFlow from '@/components/lf/LogicFlow.vue';
 import Pipeline from '@/components/lf/scenes/pipeline/index.vue';
 import { toGraphData, toRawData } from '@/components/lf/scenes/pipeline/transform.js';
 
 // 业务方提供的原始节点数据：只关心节点文案，id / 类型 / 坐标 / 连线由 transform.js 补齐。
-const INITIAL_RAW_DATA = [{ text: '开始' }, { text: '处理订单' }];
+const INITIAL_RAW_DATA = [{ text: '开始', test: '11' }, { text: '处理订单' }];
 
 export default defineComponent({
   components: {
@@ -59,28 +65,18 @@ export default defineComponent({
     return {
       rawData: INITIAL_RAW_DATA,
       graphData: toGraphData(INITIAL_RAW_DATA),
-      selectedNode: null,
+      node: null,
     };
   },
   methods: {
     onSelect(node) {
-      this.selectedNode = node;
-    },
-    onUpdateNode({ id, text }) {
-      this.$refs.pipeline.updateNode(id, text);
-    },
-    onNodeEditorInput(text) {
-      const id = this.selectedNode?.getData()?.id;
-      if (id) this.onUpdateNode({ id, text });
+      this.node = node;
     },
     onNodeAdd(data) {
       console.log('[node-add]', data);
     },
     onNodeDelete(data) {
       console.log('[node-delete]', data);
-    },
-    onNodeUpdate(data) {
-      console.log('[node-update]', data);
     },
     onCanvasClear() {
       console.log('[canvas-clear]');
@@ -90,12 +86,10 @@ export default defineComponent({
       const rawData = toRawData(this.graphData);
       console.log(
         '[inspect]',
-        JSON.parse(
-          JSON.stringify({
-            graphData,
-            rawData,
-          }),
-        ),
+        _.cloneDeep({
+          graphData,
+          rawData,
+        }),
       );
     },
   },
