@@ -48,15 +48,14 @@
 <script>
 import { defineComponent } from 'vue';
 import { uuid } from '@/utils';
-import { VERTICAL_GAP, DEFAULT_X, DEFAULT_Y, NODE_TYPE } from './transform';
+import { CenterEvents } from '@/components/lf/events';
+import { VERTICAL_GAP, DEFAULT_X, DEFAULT_Y, NODE_TYPE, EDGE_TYPE } from './transform';
 
 const EVENTS = {
   SELECT: 'select',
   NODE_ADD: 'node-add',
   NODE_DELETE: 'node-delete',
-  NODE_UPDATE: 'node-update',
   CANVAS_CLEAR: 'canvas-clear',
-  GRAPH_DATA_UPDATE: 'graph-data-update',
 };
 
 export default defineComponent({
@@ -78,28 +77,32 @@ export default defineComponent({
     },
   },
   watch: {
-    selectedNode(node) {
-      this.emit(EVENTS.SELECT, node);
+    selectedNode(next, prev) {
+      // 选中新节点
+      if (next) {
+        return this.emit(EVENTS.SELECT, next);
+      }
+
+      // 选中画布，再次选中之前节点（若存在）
+      if (prev && this.lf.getNodeModelById(prev.id)) {
+        return this.lf.selectElementById(prev.id);
+      }
+
+      // 无选中节点
+      return this.emit(EVENTS.SELECT, null);
     },
-  },
-  mounted() {
-    // 点击节点选中；点击空白取消选中。
-    this.lf.on('node:click', ({ data }) => {
-      this.lf.selectElementById(data.id);
-    });
-    this.lf.on('blank:click', this.clearNodeSelection);
   },
   methods: {
     /**
-     * 统一事件出口：转发事件载荷，并在需要时同步派发图数据变更事件。
+     * 统一事件出口：转发事件载荷，并在需要时通过 eventCenter 冒泡图数据变更事件。
      * @param {string} event 事件名。
      * @param {*} payload 事件载荷。
-     * @param {boolean} updateGraphData 是否同时派发 graph-data-update。
+     * @param {boolean} updateGraphData 是否同时冒泡图数据变更事件。
      */
     emit(event, payload, updateGraphData = false) {
       this.$emit(event, payload);
       if (updateGraphData) {
-        this.$emit(EVENTS.GRAPH_DATA_UPDATE, this.lf.getGraphData());
+        this.graphModel.eventCenter.emit(CenterEvents.GRAPH_DATA_UPDATE, this.lf.getGraphData());
       }
     },
     /**
@@ -117,9 +120,9 @@ export default defineComponent({
         this.appendNode(nodeId, text);
       }
 
-      this.lf.selectElementById(nodeId);
+      this.lf.selectElementById(nodeId, false);
       const node = this.lf.getNodeModelById(nodeId);
-      this.emit(EVENTS.NODE_ADD, node.getData(), true);
+      this.emit(EVENTS.NODE_ADD, node, true);
       this.lf.fitView();
     },
     /**
@@ -229,16 +232,10 @@ export default defineComponent({
 
       this.lf.addEdge({
         id: `edge-${uuid()}`,
-        type: 'polyline',
+        type: EDGE_TYPE,
         sourceNodeId,
         targetNodeId,
       });
-    },
-    /**
-     * 取消当前选中。
-     */
-    clearNodeSelection() {
-      this.lf?.clearSelectElements();
     },
     /**
      * 清空画布，并冒泡 canvas-clear 事件。
@@ -246,15 +243,6 @@ export default defineComponent({
     clearCanvas() {
       this.lf.clearData();
       this.emit(EVENTS.CANVAS_CLEAR, null, true);
-    },
-    /**
-     * 更新节点文本（由业务方经 App 转发调用），并冒泡 node-update 事件。
-     * @param {string} id 节点 id。
-     * @param {string} text 新文本。
-     */
-    updateNode(id, text) {
-      this.lf.updateText(id, text);
-      this.emit(EVENTS.NODE_UPDATE, { id, text }, true);
     },
   },
 });
