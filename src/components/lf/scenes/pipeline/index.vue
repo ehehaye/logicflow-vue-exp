@@ -47,14 +47,8 @@
 
 <script>
 import { defineComponent } from 'vue';
-
-// 相邻节点之间的垂直间距（px）。
-const VERTICAL_GAP = 160;
-// 空画布时首节点的兜底坐标（px）。
-const DEFAULT_X = 430;
-const DEFAULT_Y = 130;
-// 新增节点的默认类型。
-const NODE_TYPE = 'rect';
+import { uuid } from '@/utils';
+import { VERTICAL_GAP, DEFAULT_X, DEFAULT_Y, NODE_TYPE } from './transform';
 
 const EVENTS = {
   SELECT: 'select',
@@ -62,18 +56,19 @@ const EVENTS = {
   NODE_DELETE: 'node-delete',
   NODE_UPDATE: 'node-update',
   CANVAS_CLEAR: 'canvas-clear',
+  GRAPH_DATA_UPDATE: 'graph-data-update',
 };
 
 export default defineComponent({
   name: 'Pipeline',
   inject: ['lf', 'graphModel'],
-  emits: Object.values(EVENTS),
-  data() {
-    return {
-      nextNodeIndex: 0,
-      nextEdgeIndex: 0,
-    };
+  props: {
+    defaultText: {
+      type: String,
+      default: '步骤',
+    },
   },
+  emits: Object.values(EVENTS),
   computed: {
     selectedNode() {
       return this.graphModel?.selectNodes[0];
@@ -84,7 +79,7 @@ export default defineComponent({
   },
   watch: {
     selectedNode(node) {
-      this.$emit(EVENTS.SELECT, node);
+      this.emit(EVENTS.SELECT, node);
     },
   },
   mounted() {
@@ -96,13 +91,25 @@ export default defineComponent({
   },
   methods: {
     /**
+     * 统一事件出口：转发事件载荷，并在需要时同步派发图数据变更事件。
+     * @param {string} event 事件名。
+     * @param {*} payload 事件载荷。
+     * @param {boolean} updateGraphData 是否同时派发 graph-data-update。
+     */
+    emit(event, payload, updateGraphData = false) {
+      this.$emit(event, payload);
+      if (updateGraphData) {
+        this.$emit(EVENTS.GRAPH_DATA_UPDATE, this.lf.getGraphData());
+      }
+    },
+    /**
      * 新增节点：默认追加到末节点下方；有选中节点时支持前插 / 后插。
      * @param {'append' | 'before' | 'after'} position 插入位置，默认 'append'。
      */
     createNode(position = 'append') {
       this.nextNodeIndex += 1;
-      const nodeId = `node-${this.nextNodeIndex}`;
-      const text = `步骤 ${this.nextNodeIndex}`;
+      const nodeId = `node-${uuid()}`;
+      const text = this.defaultText;
 
       if (this.selectedNode && (position === 'before' || position === 'after')) {
         this.insertNodeRelativeToSelected(nodeId, text, position);
@@ -112,7 +119,7 @@ export default defineComponent({
 
       this.lf.selectElementById(nodeId);
       const node = this.lf.getNodeModelById(nodeId);
-      this.$emit(EVENTS.NODE_ADD, node.getData());
+      this.emit(EVENTS.NODE_ADD, node.getData(), true);
       this.lf.fitView();
     },
     /**
@@ -206,7 +213,7 @@ export default defineComponent({
         outgoingEdges.forEach(({ targetNodeId }) => this.connectNodes(sourceNodeId, targetNodeId));
       });
 
-      this.$emit(EVENTS.NODE_DELETE, nodeId);
+      this.emit(EVENTS.NODE_DELETE, nodeId, true);
       this.lf.fitView();
     },
     /**
@@ -220,9 +227,8 @@ export default defineComponent({
         .edges.some((edge) => edge.sourceNodeId === sourceNodeId && edge.targetNodeId === targetNodeId);
       if (exists) return;
 
-      this.nextEdgeIndex += 1;
       this.lf.addEdge({
-        id: `edge-${this.nextEdgeIndex}`,
+        id: `edge-${uuid()}`,
         type: 'polyline',
         sourceNodeId,
         targetNodeId,
@@ -239,7 +245,7 @@ export default defineComponent({
      */
     clearCanvas() {
       this.lf.clearData();
-      this.$emit(EVENTS.CANVAS_CLEAR);
+      this.emit(EVENTS.CANVAS_CLEAR, null, true);
     },
     /**
      * 更新节点文本（由业务方经 App 转发调用），并冒泡 node-update 事件。
@@ -248,7 +254,7 @@ export default defineComponent({
      */
     updateNode(id, text) {
       this.lf.updateText(id, text);
-      this.$emit(EVENTS.NODE_UPDATE, { id, text });
+      this.emit(EVENTS.NODE_UPDATE, { id, text }, true);
     },
   },
 });
