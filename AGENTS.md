@@ -5,7 +5,7 @@
 ## Project
 
 - 单页 Vue 2.7 应用，Options API + `defineComponent`，纯 JavaScript（无 TypeScript）。
-- 技术栈：LogicFlow 2.x（`@logicflow/core` + `@logicflow/layout` 的 Dagre 布局）、Vite 7、pnpm、Element UI 2.x、Tailwind（`@tailwindcss/postcss7-compat`，JIT，类名前缀 `tw-`）。
+- 技术栈：LogicFlow 2.x（`@logicflow/core` + `@logicflow/layout` 的 Dagre 布局）、Vite 7、pnpm、Element UI 2.x、Tailwind（`@tailwindcss/postcss7-compat`，JIT，类名前缀 `tw-`）、lodash（`cloneDeep` / `isEqual` / `omit`）。
 - 入口链路：`index.html` → `src/main.js`（`Vue.use(ElementUI)`，挂载 App）→ `src/App.vue` → `src/views/design/pipeline.vue`。
 - 路径别名 `@/` → `src/`（`vite.config.js` 与 `jsconfig.json` 均配置）。
 - Node >= 20.19、pnpm >= 9（`package.json` engines）；`.nvmrc` 为 v24.16.0。
@@ -23,12 +23,16 @@
 
 - `src/main.js` — 应用入口：注册 ElementUI，导入 `src/styles.css`，挂载根实例。
 - `src/App.vue` — 根组件，仅渲染页面视图 `views/design/pipeline.vue`。
-- `src/views/design/pipeline.vue` — 页面视图：组合 `LogicFlow` + `Pipeline` + `NodeEditor`，持有初始图数据 `INITIAL_GRAPH_DATA` 与 `selectedNode` 状态，转发子组件事件。
-- `src/components/lf/LogicFlow.vue` — 通用 LogicFlow 封装组件（props：`options` / `graphData` / `teleport`；emit `ready`）。创建带 Dagre 插件的实例，包装 `fitView` 先自动布局再适配，`ResizeObserver` 监听容器，`$watch` 同步 `graphData` 渲染与 `options` 编辑配置；默认配置关闭编辑态交互（只读浏览）。
+- `src/views/design/pipeline.vue` — 页面视图：组合 `LogicFlow` + `Pipeline`，持有 `graphData`（经 `graph-data.sync` 与画布双向同步）与选中节点 `node`；侧栏直接编辑选中节点的 `text` / `properties`，`inspect` 按钮经 `toRawData` 导出原始数据。
+- `src/components/lf/LogicFlow.vue` — 通用 LogicFlow 封装（props：`options` / `graphData` / `teleport`；emit `update:graphData`）。创建带 Dagre 插件的实例并注册自定义节点/边；包装 `fitView` 先自动布局再适配、布局后恢复选中；`ResizeObserver` 监听容器；监听 `GRAPH_DATA_UPDATE` / `node:properties-change` 向外同步 `graphData`；`$watch` 经 `_.isEqual` 防循环后 `render` 并同步 `options`。默认配置关闭编辑态交互（只读浏览）。
 - `src/components/lf/LoginFlowContext.vue` — 通过 `provide/inject` 向下游暴露 `lf` 与 `graphModel`。
 - `src/components/lf/model.js` — `LogicFlowWithInterceptor` 继承 `@logicflow/core`：对 `graphModel` 做 `reactive`，新增 `getLastNode()` 取无出边的末节点。
-- `src/components/lf/scenes/pipeline/index.vue` — `Pipeline` 场景组件：工具栏与节点 CRUD 逻辑（新增：追加 / 前插 / 后插；删除选中节点并交叉桥接上下游；清空画布；`connectNodes` / `updateNode`）。emit `select` / `node-add` / `node-delete` / `node-update` / `canvas-clear`。
-- `src/views/design/modules/NodeEditor.vue` — 侧栏面板：编辑选中节点文本，emit `update`。
+- `src/components/lf/events.js` — `CenterEvents.GRAPH_DATA_UPDATE` 事件常量：Pipeline 与 LogicFlow 组件间经 `graphModel.eventCenter` 通信。
+- `src/components/lf/nodes/` — 自定义节点 `step-node`（`StepNode.js`，RectNode 别名）与注册入口 `index.js`（`registerNodes`）。
+- `src/components/lf/edges/` — 自定义边 `step-edge`（`StepEdge.js`，PolylineEdge 别名，`isHitable=false` 仅作连线展示）与注册入口 `index.js`（`registerEdges`）。
+- `src/components/lf/scenes/pipeline/index.vue` — `Pipeline` 场景：工具栏 + 节点 CRUD（追加 / 前插 / 后插；删除选中节点并交叉桥接上下游；清空画布；`connectNodes`）。emit `select` / `node-add` / `node-delete` / `canvas-clear`；图数据变更经 `eventCenter` 冒泡 `GRAPH_DATA_UPDATE`。
+- `src/components/lf/scenes/pipeline/transform.js` — 业务原始数据 ⇄ LogicFlow 图数据转换：`toGraphData`（按索引补 id / 类型 / 坐标并串联 `step-edge`，透传 `properties`）、`toRawData`（还原 text / properties，omit 掉 LogicFlow 注入的 width / height）。
+- `src/utils/index.js` — `uuid()` 生成随机 id。
 
 ## Conventions
 
@@ -37,6 +41,7 @@
 - Tailwind 类名一律带 `tw-` 前缀；LogicFlow 以命令式注入 DOM，无法用 `tw-`，其样式统一在 `src/styles.css` 用 `.lf-*` 覆盖（配色、选中高亮等）。
 - 代码风格：2 空格缩进（`.editorconfig`）、Prettier（`singleQuote`、`semi`、`printWidth 120`、`trailingComma all`）。
 - 新增节点统一走 `Pipeline` 场景组件（`createNode` 等），不要在别处直接调 `lf.addNode`。
+- 自定义节点/边在 `nodes/`、`edges/` 定义，并在各自 `index.js` 数组中追加注册，由 `LogicFlow.vue` 统一 `register`。
 
 ## Information about LogicFlow
 <!-- BEGIN:logicflow-agent-rules -->
@@ -63,5 +68,5 @@ If an official package is needed but not installed, ask the user before installi
 
 ## Notes
 
-- README 的「组件 API（FlowCanvas / EditorSidebar）」与「只读/导出 JSON」等描述基于旧版实现，当前源码已重构为 `LogicFlow.vue` + `scenes/pipeline` + `NodeEditor`，以源码为准；若改动功能请同步更新 README。
+- README 的「组件 API（FlowCanvas / EditorSidebar）」与「只读/导出 JSON」等描述基于旧版实现，当前源码已重构为 `LogicFlow.vue` + `scenes/pipeline`（侧栏编辑已内联进 `views/design/pipeline.vue`，无独立 NodeEditor 组件），以源码为准；若改动功能请同步更新 README。
 - 本地根目录存在 `.pnpm-store/`（已在 `.gitignore` 忽略），属 pnpm 本地缓存，非项目源文件。
