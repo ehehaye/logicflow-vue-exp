@@ -14,10 +14,14 @@
 </template>
 
 <script>
+import _ from 'lodash';
 import { defineComponent } from 'vue';
 import '@logicflow/core/dist/index.css';
 import { Dagre } from '@logicflow/layout';
 import { LogicFlow } from './model.js';
+import { CenterEvents } from '@/components/lf/events';
+import { registerNodes } from './nodes/index.js';
+import { registerEdges } from './edges/index.js';
 import LoginFlowContext from './LoginFlowContext.vue';
 
 // LogicFlow 默认配置：关闭编辑态相关交互，仅保留只读浏览能力。
@@ -69,9 +73,10 @@ export default defineComponent({
   components: {
     LoginFlowContext,
   },
-  emits: ['ready'],
+  emits: ['update:graphData'],
   data() {
     return {
+      /** @type LogicFlow */
       lf: null,
     };
   },
@@ -82,18 +87,25 @@ export default defineComponent({
     this.setupAutoLayout();
     this.setupResizeObserver(container);
     this.setupWatchers();
-    this.lf.fitView();
+    this.setupGraphDataEvents();
 
-    this.$emit('ready', {
-      lf: this.lf,
-      graphModel: this.lf.graphModel,
-    });
+    this.lf.fitView();
   },
   beforeDestroy() {
     this.resizeObserver?.disconnect();
     this.lf?.destroy();
   },
   methods: {
+    /**
+     * 监听图数据变化事件，向外同步最新的 graphData。
+     */
+    setupGraphDataEvents() {
+      const emitGraphData = () => {
+        this.$emit('update:graphData', _.cloneDeep(this.lf.getGraphData()));
+      };
+      this.lf.on(CenterEvents.GRAPH_DATA_UPDATE, emitGraphData);
+      this.lf.on('node:properties-change', emitGraphData);
+    },
     /**
      * 解析 LogicFlow 挂载容器：优先使用 teleport 指定的外部容器，否则使用模板 ref。
      * @returns {HTMLElement}
@@ -117,11 +129,14 @@ export default defineComponent({
      * @returns {LogicFlow}
      */
     createLogicFlow(container) {
-      return new LogicFlow({
+      const lf = new LogicFlow({
         container,
         plugins: [Dagre],
         ...this.mergeOptions(),
       });
+      registerNodes(lf);
+      registerEdges(lf);
+      return lf;
     },
     /**
      * 包装实例的 fitView：先执行 Dagre 自动布局，再适配画布。
@@ -131,8 +146,11 @@ export default defineComponent({
       const originalFitView = this.lf.fitView;
       this.lf.fitView = (event) => {
         requestAnimationFrame(() => {
+          const selectedIds = [...this.lf.graphModel.selectElements.keys()];
           this.lf.extension.dagre.layout({ ...DAGRE_LAYOUT_OPTIONS });
           originalFitView.call(this.lf, event);
+          // dagre.layout 会清除选中状态，手动进行回正
+          selectedIds.forEach((id) => this.lf.selectElementById(id, true));
         });
       };
     },
@@ -141,7 +159,6 @@ export default defineComponent({
      * @param {HTMLElement} container 被观察的容器。
      */
     setupResizeObserver(container) {
-      // resizeObserver 为内部句柄，无需响应式，故不放进 data。
       this.resizeObserver = new ResizeObserver(() => this.lf.fitView());
       this.resizeObserver.observe(container);
     },
@@ -151,8 +168,10 @@ export default defineComponent({
     setupWatchers() {
       this.$watch(
         () => this.graphData,
-        () => {
-          this.lf.render(this.graphData);
+        (next) => {
+          const graphData = this.lf.getGraphData();
+          if (_.isEqual(graphData, next)) return;
+          this.lf.render(next);
           this.lf.fitView();
         },
         { immediate: true, deep: true },
