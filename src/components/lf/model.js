@@ -1,7 +1,7 @@
 import LogicFlow from '@logicflow/core';
 import { reactive } from 'vue';
 
-class LogicFlowWithInterceptor extends LogicFlow {
+class LFWidthEnhancement extends LogicFlow {
   constructor(options) {
     super(options);
     reactive(this.graphModel);
@@ -13,4 +13,4 @@ class LogicFlowWithInterceptor extends LogicFlow {
   }
 }
 
-export { LogicFlowWithInterceptor as LogicFlow };
+export { LFWidthEnhancement as LogicFlow };
