@@ -15,15 +15,15 @@
         <el-dropdown-menu slot="dropdown">
           <el-dropdown-item
             command="before"
-            :disabled="!graphModel.selectNodes.length"
+            :disabled="!selectedNode"
           >
-            插入到选中节点前
+            到选中节点前
           </el-dropdown-item>
           <el-dropdown-item
             command="after"
-            :disabled="!graphModel.selectNodes.length"
+            :disabled="!selectedNode"
           >
-            插入到选中节点后
+            到选中节点后
           </el-dropdown-item>
         </el-dropdown-menu>
       </el-dropdown>
@@ -49,6 +49,7 @@
 import { defineComponent } from 'vue';
 import { uuid } from '@/utils';
 import { CenterEvents } from '@/components/lf/events';
+import { LogicFlow } from '@/components/lf/model';
 import { VERTICAL_GAP, DEFAULT_X, DEFAULT_Y, NODE_TYPE, EDGE_TYPE } from './transform';
 
 const EVENTS = {
@@ -60,7 +61,7 @@ const EVENTS = {
 
 export default defineComponent({
   name: 'Pipeline',
-  inject: ['lf', 'graphModel'],
+  inject: ['injectLf', 'injectGraphModel'],
   props: {
     defaultText: {
       type: String,
@@ -68,6 +69,14 @@ export default defineComponent({
     },
   },
   emits: Object.values(EVENTS),
+  data() {
+    return {
+      /** @type {LogicFlow} */
+      lf: this.injectLf(),
+      /** @type {import('@logicflow/core').GraphModel} */
+      graphModel: this.injectGraphModel(),
+    };
+  },
   computed: {
     selectedNode() {
       return this.graphModel?.selectNodes[0];
