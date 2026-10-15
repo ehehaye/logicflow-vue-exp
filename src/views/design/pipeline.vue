@@ -5,7 +5,6 @@
     >
       <LogicFlow :graph-data.sync="graphData">
         <Pipeline
-          ref="pipeline"
           @select="onSelect"
           @node-add="onNodeAdd"
           @node-delete="onNodeDelete"
@@ -65,6 +64,7 @@ export default defineComponent({
     return {
       rawData: INITIAL_RAW_DATA,
       graphData: toGraphData(INITIAL_RAW_DATA),
+      /** @type {import('@logicflow/core').BaseNodeModel} */
       node: null,
     };
   },
