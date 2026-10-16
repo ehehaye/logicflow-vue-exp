@@ -1,7 +1,8 @@
 {
-  "name": "logicflow-vue2-demo",
+  "name": "logicflow-vue-exp",
   "version": "0.1.0",
-  "private": true,
+  "description": "LogicFlow + Vue 实践经验示例集（含 Pipeline 流水线编排示例）",
+  "private": false,
   "engines": {
     "node": ">=20.19",
     "pnpm": ">=9"

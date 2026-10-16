@@ -1,33 +1,35 @@
-# LogicFlow · Vue 2 Demo
+# LogicFlow Vue Exp
 
-基于 **Vue 2.7 + LogicFlow + Vite** 的流程编辑器示例。演示如何在 Vue 2 项目中集成 LogicFlow，实现节点的增删、拖拽、串联与流程图 JSON 导出。
+基于 **Vue + LogicFlow + Vite** 的实践经验（Experience）示例集，用于沉淀 LogicFlow 在 Vue 项目中的集成范式。当前包含「流水线编排（Pipeline）」画布示例，提供「数据驱动」与「事件驱动」两种集成范式，演示节点的增删、自动连线、Dagre 布局与图数据同步。
+
+> 说明：当前实现基于 Vue 2.7，代码以纯 JavaScript + Options API 编写，依赖封装与框架解耦，可低成本迁移到 Vue 3（更换 `@vitejs/plugin-vue` + Vue 3 入口写法即可）。
 
 ## 功能
 
-- 初始化「开始 → 处理订单」示例流程
-- 新增节点并按顺序纵向串联，自动连线
-- 选中并拖拽节点调整位置
-- 删除节点时自动桥接其上下游节点
-- 清空画布、适应画布、导出流程 JSON
-- 连线只读：不可选中、不可编辑、不可调整
-- 选中节点后不显示连接锚点，禁止手动创建连线（连线仅由工具栏自动生成）
-- 编辑 / 只读模式切换：只读下节点不可拖动、变更类工具栏按钮禁用；是否可点击选中由 `readonlySelectable` 控制（默认允许），编辑态节点鼠标显示为 pointer
-- 选中节点高亮：背景为蓝色、文字为白色
-- 新增 / 删除节点后自动适应一次画布
+- 双模式切换：顶部开关在「数据驱动」与「事件驱动」之间切换
+  - **数据驱动**：业务侧只维护 `nodes` 数组（`.sync`），图结构由数据派生；右侧侧栏可直接编辑选中节点名称并实时同步到画布
+  - **事件驱动**：直接操作 LogicFlow 底层图数据（节点 / 边模型），通过事件向外通知变更
+- 新增节点：默认追加到末节点下方并自动连线；有选中节点时支持「插到选中节点前 / 后」
+- 删除节点：自动把上游 × 下游交叉桥接，保持图连通
+- 清空画布、适应屏幕（自动 Dagre 布局）
+- 连线只读：自定义边不可命中，仅作连线展示
+- 选中节点高亮：蓝色填充 + 白色文字，悬停描边高亮
+- 自定义节点 `step-node` 与边 `step-edge`
 
 ## 技术栈
 
-| 类别     | 选型                                               |
-| -------- | -------------------------------------------------- |
-| 框架     | Vue 2.7                                            |
-| 流程引擎 | [LogicFlow](https://github.com/didi/LogicFlow) 2.x |
-| 构建工具 | Vite 7                                             |
-| 包管理器 | pnpm                                               |
+| 类别     | 选型                                                          |
+| -------- | ------------------------------------------------------------- |
+| 框架     | Vue 2.7（当前实现，可低成本迁移 Vue 3）                       |
+| 流程引擎 | [LogicFlow](https://github.com/didi/LogicFlow) 2.x（`@logicflow/core` + `@logicflow/layout` 的 Dagre 布局） |
+| 构建工具 | Vite 7                                                        |
+| UI       | Element UI 2.x + Tailwind（`@tailwindcss/postcss7-compat`，类名前缀 `tw-`） |
+| 包管理器 | pnpm                                                          |
 
 ## 环境要求
 
-- Node.js >= 20.19（或 >= 22.12，Vite 7 要求）
-- pnpm
+- Node.js >= 20.19（Vite 7 要求；或 >= 22.12）
+- pnpm >= 9
 
 ## 快速开始
 
@@ -46,6 +48,9 @@ pnpm preview
 
 # 格式化代码（Prettier）
 pnpm format
+
+# 校验代码格式
+pnpm format:check
 ```
 
 开发服务器默认地址见终端输出（通常为 `http://localhost:5173`）。
@@ -54,89 +59,85 @@ pnpm format
 
 ```
 .
-├── index.html          # HTML 入口
-├── vite.config.js      # Vite 配置
+├── index.html                     # HTML 入口
+├── vite.config.js                 # Vite 配置（@/ 别名 → src/）
+├── jsconfig.json                  # JS 项目配置（路径别名）
 ├── package.json
 ├── pnpm-lock.yaml
-├── src
-│   ├── main.js         # 应用入口，挂载 Vue 实例
-│   ├── App.vue         # 编辑器界面与 LogicFlow 集成逻辑
-│   └── styles.css      # 全局样式
-└── .vscode/            # 推荐的编辑器扩展
+└── src
+    ├── main.js                    # 应用入口，挂载 Vue 实例
+    ├── App.vue                    # 根组件：双模式切换器
+    ├── styles.css                 # 全局样式（@layer components）
+    ├── utils/index.js             # uuid 等工具
+    ├── views
+    │   ├── reactive.vue           # 数据驱动视图
+    │   └── classic.vue            # 事件驱动视图
+    └── components/lf
+        ├── LogicFlow.vue          # LogicFlow 通用封装
+        ├── LogicFlowContext.vue   # 画布实例 provide/inject 透传
+        ├── model.js               # LogicFlowPro（响应式 graphModel + getLastNode）
+        ├── events.js              # 图数据变更事件常量
+        ├── nodes/                 # 自定义节点 step-node（StepNode.js / index.js）
+        ├── edges/                 # 自定义边 step-edge（StepEdge.js / index.js）
+        └── scenes/
+            ├── PipelineClassic.vue    # 事件驱动场景（工具栏 + CRUD）
+            └── PipelineReactive.vue   # 数据驱动场景（mixin 复用 Classic 工具栏）
 ```
 
 ## 使用说明
 
-1. 点击 **新增节点**：会在当前最后一个节点下方新增节点并自动连线。
-2. 点击节点可选中并拖动；选中后不出现锚点，无法通过拖拽锚点手动创建连线；点击空白处取消选择。
-3. 侧边栏 **当前选择** 输入框可直接编辑选中节点的名称。
-4. 点击 **删除选中节点**：删除后会保留其上游到下游的连接关系。
-5. 点击 **清空画布**：需先选中任意节点。
-6. 点击 **适应画布**：自动缩放到内容范围。
-7. 点击 **导出 JSON**：以弹窗展示当前画布的图数据。
-8. 点击 **切换只读 / 切换编辑**：在编辑与只读模式间切换；只读时节点不可拖动（默认仍可点击选中，可用 `readonlySelectable` 关闭），新增、删除、清空按钮禁用。
+1. 顶部开关切换「数据驱动 / 事件驱动」视图。
+2. 工具栏操作（由场景组件提供）：
+   - **新增节点**：默认追加到末节点；下拉菜单可选「插到选中节点前 / 后」
+   - **适应屏幕**：自动 Dagre 布局并适配画布
+   - **删除节点**：删除选中节点并桥接上下游
+   - **清空画布**：清空所有节点
+3. 数据驱动视图：右侧「节点属性」侧栏可编辑选中节点名称，修改实时同步到画布。
 
-此外，编辑器在 `mounted` 时会把常用方法挂到 `window.flowDemo`，便于在浏览器控制台或集成测试中调用：
+## 组件说明
 
-```js
-window.flowDemo.createNode()
-window.flowDemo.deleteSelectedNode()
-window.flowDemo.clearCanvas()
-window.flowDemo.toggleEditable()
-```
+### `LogicFlow.vue`（通用封装）
 
-## 组件 API（`FlowCanvas`）
+| 属性        | 类型   | 默认值 | 说明                                                         |
+| ----------- | ------ | ------ | ------------------------------------------------------------ |
+| `options`   | Object | `{}`   | LogicFlow 编辑配置，合并覆盖默认只读配置                       |
+| `graphData` | Object | `{}`   | 外部图数据，deep watch 后渲染                                 |
+| `teleport`  | String | `''`   | 外部容器选择器；指定后画布挂载到该容器，组件内不再渲染容器     |
 
-| 属性                 | 类型      | 默认值  | 说明                                                                |
-| -------------------- | --------- | ------- | ------------------------------------------------------------------- |
-| `readonly`           | `Boolean` | `false` | 只读模式；内部 watch 该属性并同步节点交互与只读样式                 |
-| `readonlySelectable` | `Boolean` | `true`  | 只读模式下是否仍允许选中节点；设为 `false` 时只读节点完全不响应点击 |
+| 事件               | 载荷         | 说明                                       |
+| ------------------ | ------------ | ------------------------------------------ |
+| `update:graphData` | 图数据对象   | 图数据变更时向外同步（`_.cloneDeep`）        |
 
-| 事件               | 载荷                    | 说明                                      |
-| ------------------ | ----------------------- | ----------------------------------------- |
-| `node-add`         | 新节点数据              | 新增节点后触发                            |
-| `node-delete`      | 被删除节点 id           | 删除节点后触发                            |
-| `canvas-clear`     | —                       | 清空画布后触发                            |
-| `selection-change` | `{ id, label } \| null` | 选中节点变化时触发                        |
-| `export`           | JSON 字符串             | 导出图数据时触发                          |
-| `update:readonly`  | `Boolean`               | 切换只读状态时触发，支持 `:readonly.sync` |
+### `PipelineClassic.vue`（事件驱动场景）
 
-作用域插槽 `sidebar` 会把当前选中节点的状态暴露给插槽内容：
+| 属性          | 类型   | 默认值   | 说明             |
+| ------------- | ------ | -------- | ---------------- |
+| `defaultText` | String | `'节点'` | 新节点的默认文案 |
 
-| 插槽 prop           | 类型                      | 说明                                         |
-| ------------------- | ------------------------- | -------------------------------------------- |
-| `selectedNodeId`    | `String \| null`          | 当前选中节点 id                              |
-| `selectedNodeLabel` | `String`                  | 当前选中节点名称（无选中时为「未选择节点」） |
-| `hasSelectedNode`   | `Boolean`                 | 是否存在选中节点                             |
-| `readonly`          | `Boolean`                 | 当前是否只读                                 |
-| `updateLabel`       | `(label: String) => void` | 更新选中节点名称                             |
+| 事件           | 载荷                 | 说明         |
+| -------------- | -------------------- | ------------ |
+| `select`       | `{ node, index }`    | 选中节点变化 |
+| `node-add`     | 节点模型             | 新增节点后   |
+| `node-delete`  | 节点 id              | 删除节点后   |
+| `canvas-clear` | `null`               | 清空画布后   |
 
-```html
-<flow-canvas :readonly.sync="readonly">
-  <template #sidebar="slotProps">
-    <editor-sidebar
-      :selected-node-label="slotProps.selectedNodeLabel"
-      :has-selected-node="slotProps.hasSelectedNode"
-      :readonly="slotProps.readonly"
-      @update-label="slotProps.updateLabel"
-    />
-  </template>
-</flow-canvas>
-```
+### `PipelineReactive.vue`（数据驱动场景）
 
-## 组件 API（`EditorSidebar`）
+| 属性          | 类型     | 默认值                   | 说明                       |
+| ------------- | -------- | ------------------------ | -------------------------- |
+| `nodes`       | Array    | `[]`                     | 业务节点列表，支持 `.sync` |
+| `nodeFactory` | Function | `() => ({ text: '节点' })` | 新节点工厂函数             |
 
-| 属性                | 类型      | 默认值         | 说明                             |
-| ------------------- | --------- | -------------- | -------------------------------- |
-| `selectedNodeLabel` | `String`  | `'未选择节点'` | 当前选中节点名称，绑定输入框     |
-| `hasSelectedNode`   | `Boolean` | `false`        | 是否存在选中节点，控制输入框禁用 |
-| `readonly`          | `Boolean` | `false`        | 只读时输入框禁用                 |
+| 事件           | 载荷       | 说明             |
+| -------------- | ---------- | ---------------- |
+| `update:nodes` | 节点数组   | 业务节点变更时触发 |
 
-| 事件           | 载荷         | 说明                                   |
-| -------------- | ------------ | -------------------------------------- |
-| `update-label` | 输入框最新值 | 输入框变更时触发，用于更新选中节点名称 |
+## 自定义节点 / 边
+
+- `step-node`（`StepNode.js`）：圆角矩形（8px），选中时蓝色填充 + 白色文字，悬停描边高亮；文本支持自动换行。
+- `step-edge`（`StepEdge.js`）：折线边，`isHitable = false` 仅作连线展示，不响应用户操作。
 
 ## 说明
 
-- 键盘删除快捷键已禁用，节点删除统一走工具栏逻辑，以保证桥接行为一致。
+- 默认关闭编辑态交互（隐藏锚点、禁止节点 / 连线文本编辑等），连线仅由场景组件自动生成，不支持手动创建。
 - `node_modules/`、`dist/` 等构建产物与系统文件已在 `.gitignore` 中忽略。

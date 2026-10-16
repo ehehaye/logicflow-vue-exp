@@ -1,6 +1,6 @@
 # AGENTS.md
 
-> LogicFlow · Vue 2 Demo — 基于 Vue 2.7 + LogicFlow + Vite 的流程（流水线）编辑器示例。面向用户的说明见 `README.md`（注意：README 仍描述旧版 `FlowCanvas`/`EditorSidebar` 组件 API 与只读/导出功能，已过时，以源码为准）。
+> LogicFlow Vue Exp — 基于 Vue 2.7 + LogicFlow + Vite 的实践经验示例集（当前含 Pipeline 流水线编排示例）；纯 JS + Options API，可低成本迁移 Vue 3。面向用户的说明见 `README.md`。
 
 ## Project
 
@@ -70,5 +70,5 @@ If an official package is needed but not installed, ask the user before installi
 
 ## Notes
 
-- README 的「功能」「组件 API（FlowCanvas / EditorSidebar）」「`window.flowDemo`」「编辑/只读模式」「导出 JSON」等均基于旧版实现；当前源码已重构为 `App.vue` 画布类型切换 + `LogicFlow.vue` + `scenes/PipelineClassic.vue` / `PipelineReactive.vue`（侧栏编辑内联进 `views/reactive.vue`，无独立 FlowCanvas/EditorSidebar 组件），以源码为准；若改动功能请同步更新 README。
+- README 已与当前实现同步（`App.vue` 双模式切换 + `LogicFlow.vue` + `scenes/PipelineClassic.vue` / `PipelineReactive.vue`）；若改动功能请同步更新 README。
 - 本地根目录存在 `.pnpm-store/`（已在 `.gitignore` 忽略），属 pnpm 本地缓存，非项目源文件。
