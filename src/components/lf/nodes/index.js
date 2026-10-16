@@ -1,4 +1,4 @@
-import StepNode, { STEP_NODE_TYPE } from './StepNode.js';
+import StepNode, { STEP_NODE_TYPE } from './StepNode';
 
 /**
  * 所有自定义节点注册配置的统一出口。

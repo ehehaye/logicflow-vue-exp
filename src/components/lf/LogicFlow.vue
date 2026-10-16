@@ -1,15 +1,21 @@
 <template>
-  <div>
-    <template v-if="lf">
-      <LoginFlowContext :lf="lf">
-        <slot></slot>
-      </LoginFlowContext>
-    </template>
+  <div class="tw-flex tw-h-full tw-w-full tw-flex-col">
+    <LogicFlowContext
+      v-if="lf"
+      :lf="lf"
+    >
+      <slot></slot>
+    </LogicFlowContext>
     <div
       v-if="!teleport"
-      ref="container"
-      class="tw-w-full tw-h-[720px]"
-    />
+      class="tw-flex tw-w-full tw-flex-1"
+      :style="{ minHeight: '600px' }"
+    >
+      <div
+        ref="container"
+        class="tw-w-full tw-flex-1 tw-overflow-hidden"
+      />
+    </div>
   </div>
 </template>
 
@@ -18,13 +24,13 @@ import _ from 'lodash';
 import { defineComponent } from 'vue';
 import '@logicflow/core/dist/index.css';
 import { Dagre } from '@logicflow/layout';
-import { LogicFlow } from './model.js';
+import LogicFlowContext from './LogicFlowContext.vue';
 import { CenterEvents } from '@/components/lf/events';
-import { registerNodes } from './nodes/index.js';
-import { registerEdges } from './edges/index.js';
-import LoginFlowContext from './LoginFlowContext.vue';
+import { LogicFlow } from './model';
+import { registerEdges } from './edges';
+import { registerNodes } from './nodes';
 
-// LogicFlow 默认配置：关闭编辑态相关交互，仅保留只读浏览能力。
+/** LogicFlow 默认配置：关闭编辑态相关交互，仅保留只读浏览能力 */
 const DEFAULT_OPTIONS = {
   grid: {
     type: 'dot',
@@ -46,16 +52,26 @@ const DEFAULT_OPTIONS = {
   history: false,
 };
 
-// Dagre 自动布局参数，详见 http://logicflow.cn/tutorial/extension/layout
+/** Dagre 自动布局参数，详见 https://logicflow.cn/tutorial/extension/layout */
 const DAGRE_LAYOUT_OPTIONS = {
   ranker: 'network-simplex',
-  rankdir: 'TB', // 从上到下的布局方向
-  nodesep: 60, // 节点间距
-  ranksep: 70, // 层级间距
+  rankdir: 'TB', // 从上到下布局
+  nodesep: 60, // 同层节点间距
+  ranksep: 70, // 层与层间距
 };
+
+/** fitView 适配画布时预留的四周边距 */
+const FIT_VIEW_VERTICAL_OFFSET = 120;
+const FIT_VIEW_HORIZONTAL_OFFSET = 120;
+
+/** 容器尺寸变化后重新适配画布的防抖间隔（ms） */
+const RESIZE_DEBOUNCE_DELAY = 100;
 
 export default defineComponent({
   name: 'LogicFlow',
+  components: {
+    LogicFlowContext,
+  },
   props: {
     options: {
       type: Object,
@@ -65,18 +81,16 @@ export default defineComponent({
       type: Object,
       default: () => ({}),
     },
+    /** 外部容器选择器；指定后画布挂载到该容器，组件内不再渲染容器 */
     teleport: {
       type: String,
       default: '',
     },
   },
-  components: {
-    LoginFlowContext,
-  },
   emits: ['update:graphData'],
   data() {
     return {
-      /** @type LogicFlow */
+      /** @type {import('./model').LogicFlow | null} */
       lf: null,
     };
   },
@@ -124,9 +138,9 @@ export default defineComponent({
       };
     },
     /**
-     * 创建 LogicFlow 实例。
+     * 创建 LogicFlow 实例并注册自定义节点与边。
      * @param {HTMLElement} container 挂载容器。
-     * @returns {LogicFlow}
+     * @returns {import('./model').LogicFlow}
      */
     createLogicFlow(container) {
       const lf = new LogicFlow({
@@ -144,12 +158,12 @@ export default defineComponent({
      */
     setupAutoLayout() {
       const originalFitView = this.lf.fitView;
-      this.lf.fitView = (event) => {
+      this.lf.fitView = () => {
         requestAnimationFrame(() => {
           const selectedIds = [...this.lf.graphModel.selectElements.keys()];
           this.lf.extension.dagre.layout({ ...DAGRE_LAYOUT_OPTIONS });
-          originalFitView.call(this.lf, event);
-          // dagre.layout 会清除选中状态，手动进行回正
+          originalFitView.call(this.lf, FIT_VIEW_VERTICAL_OFFSET, FIT_VIEW_HORIZONTAL_OFFSET);
+          // dagre.layout 会清除选中状态，布局完成后恢复
           selectedIds.forEach((id) => this.lf.selectElementById(id, true));
         });
       };
@@ -159,7 +173,10 @@ export default defineComponent({
      * @param {HTMLElement} container 被观察的容器。
      */
     setupResizeObserver(container) {
-      this.resizeObserver = new ResizeObserver(() => this.lf.fitView());
+      const handleResize = _.debounce(() => {
+        this.lf.fitView();
+      }, RESIZE_DEBOUNCE_DELAY);
+      this.resizeObserver = new ResizeObserver(handleResize);
       this.resizeObserver.observe(container);
     },
     /**
@@ -169,8 +186,8 @@ export default defineComponent({
       this.$watch(
         () => this.graphData,
         (next) => {
-          const graphData = this.lf.getGraphData();
-          if (_.isEqual(graphData, next)) return;
+          const currentGraphData = this.lf.getGraphData();
+          if (_.isEqual(currentGraphData, next)) return;
           this.lf.render(next);
           this.lf.fitView();
         },

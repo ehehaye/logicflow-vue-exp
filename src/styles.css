@@ -5,7 +5,6 @@
 @layer base {
   :root {
     color: #17213a;
-    background: #edf1f8;
     font-family:
       Inter,
       ui-sans-serif,
@@ -22,43 +21,217 @@
   }
 }
 
-/* LogicFlow 以命令式方式注入节点/连线 DOM，无法使用带 tw- 前缀的工具类，
-   因此其内置形状统一在此用 `.lf-*` 覆盖，以贴合 demo 配色。 */
-/* 节点文本 */
-.lf-node-text {
-  font-size: 14px;
-  fill: #223151;
-}
-/* 基础节点形状：矩形 / 圆形 / 多边形 */
-.lf-base-node rect,
-.lf-base-node circle,
-.lf-base-node polygon {
-  fill: #fff;
-  stroke: #6f87dc;
-  stroke-width: 1.5;
-}
-/* 选中节点：实心高亮 */
-.lf-node-selected .lf-basic-shape {
-  fill: #4465e8;
-  stroke: #4465e8;
-}
-.lf-node-selected text {
-  fill: #fff;
-}
-/* 连线 */
-.lf-edge-path {
-  stroke: #7084c9;
-  stroke-width: 1.5;
-}
-/* 光标样式随编辑 / 只读模式切换 */
-.flow-canvas--editable .lf-node {
-  cursor: pointer;
-}
-.flow-canvas--readonly .lf-node {
-  cursor: default;
+@layer components {
+  /* ---------- 应用外壳 ---------- */
+  .app-shell {
+    min-height: 100vh;
+    padding: 28px;
+    box-sizing: border-box;
+    background:
+      radial-gradient(1200px 500px at 50% -10%, #ffffff 0%, rgba(255, 255, 255, 0) 60%),
+      linear-gradient(180deg, #f3f6fc 0%, #edf1f8 100%);
+  }
+
+  .app-panel {
+    max-width: 1440px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 1px solid #e4eaf3;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow:
+      0 1px 2px rgba(16, 24, 40, 0.04),
+      0 12px 32px -12px rgba(16, 24, 40, 0.12);
+  }
+
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: #ffffff;
+    border-bottom: 1px solid #edf1f7;
+  }
+
+  .app-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    box-shadow: 0 4px 10px -3px rgba(59, 130, 246, 0.5);
+  }
+
+  .app-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #1d2433;
+  }
+
+  .app-subtitle {
+    margin: 0;
+    font-size: 12px;
+    color: #8a97ad;
+  }
+
+  /* ---------- 视图分段切换器 ---------- */
+  .view-switch {
+    position: relative;
+    display: flex;
+    padding: 4px;
+    background: #eef1f7;
+    border-radius: 12px;
+  }
+
+  .view-switch__indicator {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    background: #ffffff;
+    border-radius: 9px;
+    box-shadow:
+      0 1px 2px rgba(16, 24, 40, 0.08),
+      0 2px 8px -2px rgba(16, 24, 40, 0.08);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .view-switch__item {
+    position: relative;
+    z-index: 1;
+    width: 96px;
+    padding: 6px 0;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #8492ab;
+    transition: color 0.2s ease;
+  }
+
+  .view-switch__item:hover {
+    color: #5b6b85;
+  }
+
+  .view-switch__item--active {
+    color: #1d2433;
+    font-weight: 600;
+  }
+
+  /* ---------- 流水线工具栏 ---------- */
+  .pipeline-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #e9eef6;
+  }
+
+  /* ---------- 属性检查器（侧栏） ---------- */
+  .inspector {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 300px;
+    flex-shrink: 0;
+    padding: 16px;
+    background: #f8fafd;
+    border-left: 1px solid #e9eef6;
+  }
+
+  .inspector__card {
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid #e4eaf3;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  }
+
+  .inspector__eyebrow {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #7d8aa6;
+  }
+
+  .inspector__step-badge {
+    padding: 3px 8px;
+    background: #e8effe;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #2563eb;
+  }
+
+  .inspector__label {
+    display: block;
+    margin: 14px 0 6px;
+    font-size: 12px;
+    color: #5b6b85;
+  }
+
+  .inspector__hint {
+    margin: 8px 0 0;
+    font-size: 11px;
+    color: #9aa7bd;
+  }
+
+  .inspector__empty {
+    margin-top: 12px;
+    padding: 22px 12px;
+    border: 1px dashed #d5deeb;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.8;
+    color: #9aa7bd;
+  }
+
+  .inspector__empty i {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 20px;
+    color: #b6c2d4;
+  }
 }
 
-/* 工具栏改用 Element 按钮 + flex gap 统一间距，重置按钮之间的默认外边距 */
-.flow-toolbar .el-button + .el-button {
-  margin-left: 0;
+@layer components {
+  /* ---------- Element UI 细节美化 ---------- */
+  .el-button {
+    border-radius: 8px;
+  }
+
+  .el-input__inner {
+    border-radius: 8px;
+    border-color: #dce3ef;
+  }
+
+  .el-input__inner:focus {
+    border-color: #2563eb;
+  }
+
+  .el-popover.el-popper {
+    border-radius: 10px;
+    box-shadow:
+      0 4px 6px -2px rgba(16, 24, 40, 0.05),
+      0 12px 24px -8px rgba(16, 24, 40, 0.12);
+  }
+
+  .el-dropdown-menu.el-popper {
+    border-radius: 10px;
+  }
 }

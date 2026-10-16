@@ -1,12 +1,12 @@
 # AGENTS.md
 
-> LogicFlow · Vue 2 Demo — 基于 Vue 2.7 + LogicFlow + Vite 的流程（流水线）编辑器示例。面向用户的说明见 `README.md`（注意：README 的部分组件 API 描述已过时，以源码为准）。
+> LogicFlow · Vue 2 Demo — 基于 Vue 2.7 + LogicFlow + Vite 的流程（流水线）编辑器示例。面向用户的说明见 `README.md`（注意：README 仍描述旧版 `FlowCanvas`/`EditorSidebar` 组件 API 与只读/导出功能，已过时，以源码为准）。
 
 ## Project
 
 - 单页 Vue 2.7 应用，Options API + `defineComponent`，纯 JavaScript（无 TypeScript）。
-- 技术栈：LogicFlow 2.x（`@logicflow/core` + `@logicflow/layout` 的 Dagre 布局）、Vite 7、pnpm、Element UI 2.x、Tailwind（`@tailwindcss/postcss7-compat`，JIT，类名前缀 `tw-`）、lodash（`cloneDeep` / `isEqual` / `omit`）。
-- 入口链路：`index.html` → `src/main.js`（`Vue.use(ElementUI)`，挂载 App）→ `src/App.vue` → `src/views/design/pipeline.vue`。
+- 技术栈：LogicFlow 2.x（`@logicflow/core` + `@logicflow/layout` 的 Dagre 布局）、Vite 7、pnpm、Element UI 2.x、Tailwind（`@tailwindcss/postcss7-compat`，JIT，类名前缀 `tw-`）、lodash（`cloneDeep` / `isEqual` / `differenceWith` / `debounce`）。
+- 入口链路：`index.html` → `src/main.js`（`Vue.use(ElementUI)`，导入 element-ui 主题 css 与 `src/styles.css`）→ `src/App.vue`（画布类型选择器，动态渲染视图）→ `src/views/reactive.vue`（数据驱动，默认）/ `src/views/classic.vue`（事件驱动）。
 - 路径别名 `@/` → `src/`（`vite.config.js` 与 `jsconfig.json` 均配置）。
 - Node >= 20.19、pnpm >= 9（`package.json` engines）；`.nvmrc` 为 v24.16.0。
 - 暂无测试框架。
@@ -14,33 +14,35 @@
 ## Commands
 
 - `pnpm install` — 安装依赖（`node_modules/` 不入库，首次必跑）
-- `pnpm dev` — 启动 Vite 开发服务器（默认 <http://localhost:5173）>
+- `pnpm dev` — 启动 Vite 开发服务器（默认 <http://localhost:5173>）
 - `pnpm build` — 生产构建（输出 `dist/`）
 - `pnpm preview` — 预览构建产物
 - `pnpm format` / `pnpm format:check` — Prettier 格式化 / 校验
 
 ## Architecture
 
-- `src/main.js` — 应用入口：注册 ElementUI，导入 `src/styles.css`，挂载根实例。
-- `src/App.vue` — 根组件，仅渲染页面视图 `views/design/pipeline.vue`。
-- `src/views/design/pipeline.vue` — 页面视图：组合 `LogicFlow` + `Pipeline`，持有 `graphData`（经 `graph-data.sync` 与画布双向同步）与选中节点 `node`；侧栏直接编辑选中节点的 `text` / `properties`，`inspect` 按钮经 `toRawData` 导出原始数据。
-- `src/components/lf/LogicFlow.vue` — 通用 LogicFlow 封装（props：`options` / `graphData` / `teleport`；emit `update:graphData`）。创建带 Dagre 插件的实例并注册自定义节点/边；包装 `fitView` 先自动布局再适配、布局后恢复选中；`ResizeObserver` 监听容器；监听 `GRAPH_DATA_UPDATE` / `node:properties-change` 向外同步 `graphData`；`$watch` 经 `_.isEqual` 防循环后 `render` 并同步 `options`。默认配置关闭编辑态交互（只读浏览）。
-- `src/components/lf/LoginFlowContext.vue` — 通过 `provide/inject` 向下游暴露 `lf` 与 `graphModel`。
-- `src/components/lf/model.js` — `LogicFlowWithInterceptor` 继承 `@logicflow/core`：对 `graphModel` 做 `reactive`，新增 `getLastNode()` 取无出边的末节点。
-- `src/components/lf/events.js` — `CenterEvents.GRAPH_DATA_UPDATE` 事件常量：Pipeline 与 LogicFlow 组件间经 `graphModel.eventCenter` 通信。
-- `src/components/lf/nodes/` — 自定义节点 `step-node`（`StepNode.js`，RectNode 别名）与注册入口 `index.js`（`registerNodes`）。
-- `src/components/lf/edges/` — 自定义边 `step-edge`（`StepEdge.js`，PolylineEdge 别名，`isHitable=false` 仅作连线展示）与注册入口 `index.js`（`registerEdges`）。
-- `src/components/lf/scenes/pipeline/index.vue` — `Pipeline` 场景：工具栏 + 节点 CRUD（追加 / 前插 / 后插；删除选中节点并交叉桥接上下游；清空画布；`connectNodes`）。emit `select` / `node-add` / `node-delete` / `canvas-clear`；图数据变更经 `eventCenter` 冒泡 `GRAPH_DATA_UPDATE`。
-- `src/components/lf/scenes/pipeline/transform.js` — 业务原始数据 ⇄ LogicFlow 图数据转换：`toGraphData`（按索引补 id / 类型 / 坐标并串联 `step-edge`，透传 `properties`）、`toRawData`（还原 text / properties，omit 掉 LogicFlow 注入的 width / height）。
+- `src/main.js` — 应用入口：`Vue.use(ElementUI)`，导入 `element-ui/lib/theme-chalk/index.css` 与 `src/styles.css`，挂载根实例。
+- `src/App.vue` — 根组件：分段切换器（`.view-switch` 滑块控件）切换「数据驱动 / 事件驱动」，经 `<Component :is="activeView" />` 动态渲染 `views/reactive.vue`（默认）或 `views/classic.vue`。
+- `src/views/reactive.vue` — 数据驱动视图：组合 `LogicFlow` + `PipelineReactive`，持有 `nodes`（`:nodes.sync`）与 `activeIndex`；侧栏 `el-input` 直接编辑选中节点的 `text`（`computed node` 取 `nodes[activeIndex]`）。
+- `src/views/classic.vue` — 事件驱动视图：仅组合 `LogicFlow` + `PipelineClassic`。
+- `src/components/lf/LogicFlow.vue` — 通用 LogicFlow 封装（props：`options` / `graphData` / `teleport`；emit `update:graphData`）。`mounted` 创建带 Dagre 插件的实例并 `registerNodes`/`registerEdges`；默认配置关闭编辑态交互（只读浏览）；`setupAutoLayout` 包装 `fitView` 先跑 `lf.extension.dagre.layout` 再适配并恢复选中；`ResizeObserver` 监听容器变化重适配；`setupGraphDataEvents` 监听 `GRAPH_DATA_UPDATE` / `node:properties-change` 向外 `_.cloneDeep` 同步 `graphData`；`setupWatchers` 经 `_.isEqual` 防循环后 `render` 并同步 `options`。slot 内容包在 `LogicFlowContext` 中向下游注入。
+- `src/components/lf/LogicFlowContext.vue` — 透传 `lf` prop，`provide` 暴露 `lf` / `graphModel` / `injectLf` / `injectGraphModel` 供场景组件 `inject`。
+- `src/components/lf/model.js` — `LogicFlowPro`（导出名 `LogicFlow`）继承 `@logicflow/core`：构造时对 `graphModel` 做 `reactive`，新增 `getLastNode()` 取无出边的末节点。
+- `src/components/lf/events.js` — `CenterEvents.GRAPH_DATA_UPDATE` 事件常量：场景组件经 `graphModel.eventCenter` 冒泡图数据变更。
+- `src/components/lf/nodes/` — 自定义节点 `step-node`（`StepNode.js`：`StepNodeModel extends RectNodeModel` 圆角 8px，选中时填充 `#2563eb`、白字，悬停描边高亮；`StepNodeView extends RectNode`；导出 `STEP_NODE_TYPE`）与注册入口 `index.js`（`registerNodes`）。
+- `src/components/lf/edges/` — 自定义边 `step-edge`（`StepEdge.js`：`StepEdgeModel extends PolylineEdgeModel`，`isHitable=false` 仅作连线展示；导出 `STEP_EDGE_TYPE`）与注册入口 `index.js`（`registerEdges`）。
+- `src/components/lf/scenes/PipelineClassic.vue` — 事件驱动场景：工具栏 + 节点 CRUD（追加 / 前插 / 后插；`rewireIncomingEdges`/`rewireOutgoingEdges`/`shiftSubtree` 腾位重连；`deleteSelectedNode` 交叉桥接上下游；`clearCanvas`；`connectNodes` 防重连）。`inject` `injectLf`/`injectGraphModel`；emit `select` / `node-add` / `node-delete` / `canvas-clear`，并经 `eventCenter` 冒泡 `GRAPH_DATA_UPDATE`；导出常量 `DEFAULT_X` / `DEFAULT_Y` / `VERTICAL_GAP` / `NODE_TYPE` / `EDGE_TYPE`。
+- `src/components/lf/scenes/PipelineReactive.vue` — 数据驱动场景（无独立模板，复用 Classic 工具栏）：`mixins: [PipelineClassic]`（复用工具栏与选中逻辑），新增 props `nodes`（`.sync`）与 `nodeFactory`；`watch nodes`（deep）区分属性变更（`syncNodeProperties` 批量 `updateText`/`setProperties` 增量更新）与数量变更（全量 `render`）；`toGraphData` 按索引补 id/type/坐标并串联 `step-edge`、透传 `properties`；`nodeIdMap`（WeakMap）维护原始数据到图节点 id 的映射；`previousNodes` 存上轮快照供 diff；`createNode`/`deleteSelectedNode`/`clearCanvas` 均 emit `update:nodes` 同步业务数据（不直接改 props）。
 - `src/utils/index.js` — `uuid()` 生成随机 id。
 
 ## Conventions
 
-- 全部组件用 Options API + `defineComponent`，纯 JS；`emits` 显式声明事件；跨层数据用 `provide/inject`。
+- 全部组件用 Options API + `defineComponent`，纯 JS；`emits` 显式声明事件；跨层数据用 `provide/inject`（场景组件 `inject` `injectLf`/`injectGraphModel`）。
+- 同一份流水线能力有两条路径：`PipelineClassic`（事件驱动，直面 LogicFlow 底层数据）与 `PipelineReactive`（数据驱动，mixin 复用 Classic 的工具栏）。改公共 CRUD 逻辑优先改 `PipelineClassic`，勿破坏 Reactive 的 mixin 复用。
 - UI 文案为中文，改动时保持一致。
-- Tailwind 类名一律带 `tw-` 前缀；LogicFlow 以命令式注入 DOM，无法用 `tw-`，其样式统一在 `src/styles.css` 用 `.lf-*` 覆盖（配色、选中高亮等）。
+- Tailwind 类名一律带 `tw-` 前缀；LogicFlow 以命令式注入 DOM，无法用 `tw-`。节点/边的视觉样式（配色、选中/悬停态）在各自 model 类内通过 `getNodeStyle`/`getTextStyle`/`getEdgeStyle` 定义（配色常量集中于 `StepNode.js` 的 `NODE_COLORS`）；应用外壳 / 工具栏 / 侧栏等业务 UI 样式在 `src/styles.css` 的 `@layer components` 用 `.app-*` / `.view-switch` / `.pipeline-toolbar` / `.inspector` 定义，Element UI 经 `.el-*` 覆盖美化。
 - 代码风格：2 空格缩进（`.editorconfig`）、Prettier（`singleQuote`、`semi`、`printWidth 120`、`trailingComma all`）。
-- 新增节点统一走 `Pipeline` 场景组件（`createNode` 等），不要在别处直接调 `lf.addNode`。
+- 新增节点统一走 Pipeline 场景组件（`createNode` 等），不要在别处直接调 `lf.addNode`。
 - 自定义节点/边在 `nodes/`、`edges/` 定义，并在各自 `index.js` 数组中追加注册，由 `LogicFlow.vue` 统一 `register`。
 
 ## Information about LogicFlow
@@ -68,5 +70,5 @@ If an official package is needed but not installed, ask the user before installi
 
 ## Notes
 
-- README 的「组件 API（FlowCanvas / EditorSidebar）」与「只读/导出 JSON」等描述基于旧版实现，当前源码已重构为 `LogicFlow.vue` + `scenes/pipeline`（侧栏编辑已内联进 `views/design/pipeline.vue`，无独立 NodeEditor 组件），以源码为准；若改动功能请同步更新 README。
+- README 的「功能」「组件 API（FlowCanvas / EditorSidebar）」「`window.flowDemo`」「编辑/只读模式」「导出 JSON」等均基于旧版实现；当前源码已重构为 `App.vue` 画布类型切换 + `LogicFlow.vue` + `scenes/PipelineClassic.vue` / `PipelineReactive.vue`（侧栏编辑内联进 `views/reactive.vue`，无独立 FlowCanvas/EditorSidebar 组件），以源码为准；若改动功能请同步更新 README。
 - 本地根目录存在 `.pnpm-store/`（已在 `.gitignore` 忽略），属 pnpm 本地缓存，非项目源文件。

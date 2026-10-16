@@ -1,104 +1,164 @@
 <template>
   <div
-    class="tw-flex tw-justify-between tw-py-[14px] tw-px-5 tw-text-xs tw-text-[#71809a] tw-bg-white tw-border-b tw-border-[#e8edf5]"
+    v-show="!graphModel.editConfigModel.isSilentMode"
+    class="pipeline-toolbar"
   >
-    <div class="flow-toolbar tw-flex tw-items-center tw-gap-[10px]">
+    <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
       <el-dropdown
         split-button
         type="primary"
+        size="small"
         trigger="click"
-        v-if="!graphModel.editConfigModel.isSilentMode"
         @click="() => createNode('append')"
         @command="createNode"
       >
-        新增节点
+        <span class="tw-inline-flex tw-items-center tw-gap-1"> <i class="el-icon-plus" />新增节点 </span>
         <el-dropdown-menu slot="dropdown">
           <el-dropdown-item
             command="before"
             :disabled="!selectedNode"
           >
-            到选中节点前
+            插到选中节点前
           </el-dropdown-item>
           <el-dropdown-item
             command="after"
             :disabled="!selectedNode"
           >
-            到选中节点后
+            插到选中节点后
           </el-dropdown-item>
         </el-dropdown-menu>
       </el-dropdown>
+
+      <el-divider direction="vertical" />
+
       <el-button
-        v-if="graphModel.selectNodes.length"
-        type="danger"
-        @click="deleteSelectedNode"
-      >
-        删除选中节点
-      </el-button>
-      <el-button @click="() => lf.fitView()"> 适应画布 </el-button>
-      <el-button
-        @click="clearCanvas"
         v-show="graphModel.nodes.length"
+        size="small"
+        icon="el-icon-full-screen"
+        @click="() => lf.fitView()"
       >
-        清空画布
+        适应屏幕
       </el-button>
+
+      <el-popconfirm
+        v-show="selectedNode"
+        title="将删除选中节点，是否继续？"
+        @onConfirm="deleteSelectedNode"
+      >
+        <template #reference>
+          <el-button
+            size="small"
+            type="danger"
+            plain
+            icon="el-icon-remove-outline"
+          >
+            删除节点
+          </el-button>
+        </template>
+      </el-popconfirm>
+
+      <el-popconfirm
+        v-show="graphModel.nodes.length"
+        title="将删除所有节点，是否继续？"
+        @onConfirm="clearCanvas"
+      >
+        <template #reference>
+          <el-button
+            size="small"
+            type="danger"
+            plain
+            icon="el-icon-delete"
+          >
+            清空画布
+          </el-button>
+        </template>
+      </el-popconfirm>
     </div>
+
+    <span
+      v-if="graphModel.nodes.length"
+      class="tw-text-xs tw-text-[#9aa7bd]"
+    >
+      共 {{ graphModel.nodes.length }} 个节点
+    </span>
   </div>
 </template>
 
 <script>
+/**
+ * 事件驱动的流水线编排画布场景。
+ * 直接操作 LogicFlow 底层数据（节点 / 边模型），通过事件向外通知变更。
+ */
 import { defineComponent } from 'vue';
 import { uuid } from '@/utils';
 import { CenterEvents } from '@/components/lf/events';
-import { LogicFlow } from '@/components/lf/model';
-import { VERTICAL_GAP, DEFAULT_X, DEFAULT_Y, NODE_TYPE, EDGE_TYPE } from './transform';
+import { STEP_NODE_TYPE } from '@/components/lf/nodes';
+import { STEP_EDGE_TYPE } from '@/components/lf/edges';
 
-const EVENTS = {
+/** 首个节点的默认坐标与节点间的垂直间距 */
+export const DEFAULT_X = 430;
+export const DEFAULT_Y = 130;
+export const VERTICAL_GAP = 160;
+
+/** 场景中使用的节点 / 边类型 */
+export const NODE_TYPE = STEP_NODE_TYPE;
+export const EDGE_TYPE = STEP_EDGE_TYPE;
+
+/** 场景对外抛出的事件名 */
+const EVENTS = Object.freeze({
   SELECT: 'select',
   NODE_ADD: 'node-add',
   NODE_DELETE: 'node-delete',
   CANVAS_CLEAR: 'canvas-clear',
-};
+});
 
 export default defineComponent({
-  name: 'Pipeline',
+  name: 'PipelineClassic',
   inject: ['injectLf', 'injectGraphModel'],
   props: {
+    /** 新节点的默认文案 */
     defaultText: {
       type: String,
-      default: '步骤',
+      default: '节点',
     },
   },
   emits: Object.values(EVENTS),
   data() {
     return {
-      /** @type {LogicFlow} */
+      /** @type {import('@/components/lf/model').LogicFlow} */
       lf: this.injectLf(),
       /** @type {import('@logicflow/core').GraphModel} */
       graphModel: this.injectGraphModel(),
     };
   },
   computed: {
+    /** 当前选中的节点模型（单选场景，取第一个） */
     selectedNode() {
       return this.graphModel?.selectNodes[0];
     },
     selectedNodeId() {
       return this.selectedNode?.getData()?.id;
     },
+    /** 选中节点在节点列表中的下标，未选中时为 -1 */
+    selectedNodeIndex() {
+      if (!this.selectedNode) return -1;
+      return this.graphModel.nodes.indexOf(this.selectedNode);
+    },
   },
   watch: {
     selectedNode(next, prev) {
       // 选中新节点
       if (next) {
-        return this.emit(EVENTS.SELECT, next);
+        return this.emitSceneEvent(EVENTS.SELECT, { node: next, index: this.selectedNodeIndex });
       }
 
-      // 选中画布，再次选中之前节点（若存在）
+      // 点击画布空白处导致取消选中时，恢复之前的选中节点（若仍存在）
       if (prev && this.lf.getNodeModelById(prev.id)) {
         return this.lf.selectElementById(prev.id);
       }
 
       // 无选中节点
-      return this.emit(EVENTS.SELECT, null);
+      return this.emitSceneEvent(EVENTS.SELECT, { node: null, index: -1 });
     },
   },
   methods: {
@@ -106,11 +166,11 @@ export default defineComponent({
      * 统一事件出口：转发事件载荷，并在需要时通过 eventCenter 冒泡图数据变更事件。
      * @param {string} event 事件名。
      * @param {*} payload 事件载荷。
-     * @param {boolean} updateGraphData 是否同时冒泡图数据变更事件。
+     * @param {boolean} [syncGraphData] 是否同时冒泡图数据变更事件。
      */
-    emit(event, payload, updateGraphData = false) {
+    emitSceneEvent(event, payload, syncGraphData = false) {
       this.$emit(event, payload);
-      if (updateGraphData) {
+      if (syncGraphData) {
         this.graphModel.eventCenter.emit(CenterEvents.GRAPH_DATA_UPDATE, this.lf.getGraphData());
       }
     },
@@ -119,40 +179,44 @@ export default defineComponent({
      * @param {'append' | 'before' | 'after'} position 插入位置，默认 'append'。
      */
     createNode(position = 'append') {
-      this.nextNodeIndex += 1;
       const nodeId = `node-${uuid()}`;
       const text = this.defaultText;
 
       if (this.selectedNode && (position === 'before' || position === 'after')) {
-        this.insertNodeRelativeToSelected(nodeId, text, position);
+        this.insertNodeAroundSelected(nodeId, text, position);
       } else {
         this.appendNode(nodeId, text);
       }
 
       this.lf.selectElementById(nodeId, false);
       const node = this.lf.getNodeModelById(nodeId);
-      this.emit(EVENTS.NODE_ADD, node, true);
+      this.emitSceneEvent(EVENTS.NODE_ADD, node, true);
       this.lf.fitView();
     },
     /**
      * 在末节点下方追加节点并自动连线。
+     * @param {string} nodeId 新节点 id。
+     * @param {string} text 节点文案。
      */
     appendNode(nodeId, text) {
-      const tail = this.lf.getLastNode();
+      const tailNode = this.lf.getLastNode();
       this.lf.addNode({
         id: nodeId,
         type: NODE_TYPE,
-        x: tail ? tail.x : DEFAULT_X,
-        y: tail ? tail.y + VERTICAL_GAP : DEFAULT_Y,
+        x: tailNode ? tailNode.x : DEFAULT_X,
+        y: tailNode ? tailNode.y + VERTICAL_GAP : DEFAULT_Y,
         text,
       });
 
-      if (tail) this.connectNodes(tail.id, nodeId);
+      if (tailNode) this.connectNodes(tailNode.id, nodeId);
     },
     /**
      * 在选中节点前 / 后插入节点：腾出槽位并重定向相关连线。
+     * @param {string} nodeId 新节点 id。
+     * @param {string} text 节点文案。
+     * @param {'before' | 'after'} direction 插入方向。
      */
-    insertNodeRelativeToSelected(nodeId, text, direction) {
+    insertNodeAroundSelected(nodeId, text, direction) {
       const { id: selectedId, x, y } = this.selectedNode;
 
       if (direction === 'before') {
@@ -220,12 +284,12 @@ export default defineComponent({
       const outgoingEdges = this.lf.getNodeOutgoingEdge(nodeId).map((edge) => edge.getData());
 
       this.lf.deleteNode(nodeId);
-      // 交叉配对：每个上游 × 每个下游，保证删除后图仍连通。
+      // 交叉配对：每个上游 × 每个下游，保证删除后图仍连通
       incomingEdges.forEach(({ sourceNodeId }) => {
         outgoingEdges.forEach(({ targetNodeId }) => this.connectNodes(sourceNodeId, targetNodeId));
       });
 
-      this.emit(EVENTS.NODE_DELETE, nodeId, true);
+      this.emitSceneEvent(EVENTS.NODE_DELETE, nodeId, true);
       this.lf.fitView();
     },
     /**
@@ -234,10 +298,10 @@ export default defineComponent({
     connectNodes(sourceNodeId, targetNodeId) {
       if (sourceNodeId === targetNodeId) return;
 
-      const exists = this.lf
+      const alreadyConnected = this.lf
         .getGraphData()
         .edges.some((edge) => edge.sourceNodeId === sourceNodeId && edge.targetNodeId === targetNodeId);
-      if (exists) return;
+      if (alreadyConnected) return;
 
       this.lf.addEdge({
         id: `edge-${uuid()}`,
@@ -251,7 +315,7 @@ export default defineComponent({
      */
     clearCanvas() {
       this.lf.clearData();
-      this.emit(EVENTS.CANVAS_CLEAR, null, true);
+      this.emitSceneEvent(EVENTS.CANVAS_CLEAR, null, true);
     },
   },
 });

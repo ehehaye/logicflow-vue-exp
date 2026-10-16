@@ -1,4 +1,4 @@
-import StepEdge, { STEP_EDGE_TYPE } from './StepEdge.js';
+import StepEdge, { STEP_EDGE_TYPE } from './StepEdge';
 
 /**
  * 所有自定义边注册配置的统一出口。
