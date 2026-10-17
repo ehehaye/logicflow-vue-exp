@@ -4,6 +4,10 @@
 
 > 说明：当前实现基于 Vue 2.7，代码以纯 JavaScript + Options API 编写，依赖封装与框架解耦，可低成本迁移到 Vue 3（更换 `@vitejs/plugin-vue` + Vue 3 入口写法即可）。
 
+## 在线演示
+
+<https://ehehaye.github.io/logicflow-vue-exp/>
+
 ## 界面预览
 
 | 数据驱动 | 事件驱动 |
@@ -63,6 +67,13 @@ pnpm format:check
 ```
 
 开发服务器默认地址见终端输出（通常为 `http://localhost:5173`）。
+
+## 部署
+
+站点通过 GitHub Actions 自动发布到 GitHub Pages：推送到 `main` 后由 `.github/workflows/deploy.yml` 构建并部署 `dist/`。
+
+- 仓库需在 **Settings → Pages → Source** 选择 **GitHub Actions**
+- 构建时 Vite `base` 为 `/logicflow-vue-exp/`，本地开发仍为 `/`
 
 ## 目录结构
 
