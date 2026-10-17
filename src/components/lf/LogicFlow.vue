@@ -1,7 +1,7 @@
 <template>
   <div class="tw-flex tw-h-full tw-w-full tw-flex-col">
     <LogicFlowContext
-      v-if="lf"
+      v-if="initialized"
       :lf="lf"
     >
       <slot></slot>
@@ -92,18 +92,21 @@ export default defineComponent({
     return {
       /** @type {import('./model').LogicFlow | null} */
       lf: null,
+      initialized: false,
     };
   },
   mounted() {
     const container = this.resolveContainer();
 
     this.lf = this.createLogicFlow(container);
-    this.setupAutoLayout();
-    this.setupResizeObserver(container);
-    this.setupWatchers();
-    this.setupGraphDataEvents();
-
-    this.lf.fitView();
+    this.lf.once('graph:rendered', () => {
+      this.setupAutoLayout();
+      this.setupResizeObserver(container);
+      this.setupWatchers();
+      this.setupGraphDataEvents();
+      this.initialized = true;
+    });
+    this.lf.render();
   },
   beforeDestroy() {
     this.resizeObserver?.disconnect();

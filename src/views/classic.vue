@@ -1,6 +1,6 @@
 <template>
   <div class="tw-flex tw-w-full tw-flex-row tw-h-full">
-    <LogicFlow @update:graphData="graphData = $event">
+    <LogicFlow :graphData.sync="graphData">
       <PipelineClassic />
     </LogicFlow>
 
