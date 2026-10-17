@@ -31,14 +31,22 @@
 
       <el-divider direction="vertical" />
 
-      <el-button
+      <el-popconfirm
         v-show="graphModel.nodes.length"
-        size="small"
-        icon="el-icon-full-screen"
-        @click="() => lf.fitView()"
+        title="将删除所有节点，是否继续？"
+        @onConfirm="clearCanvas"
       >
-        适应屏幕
-      </el-button>
+        <template #reference>
+          <el-button
+            size="small"
+            type="danger"
+            plain
+            icon="el-icon-delete"
+          >
+            清空画布
+          </el-button>
+        </template>
+      </el-popconfirm>
 
       <el-popconfirm
         v-show="selectedNode"
@@ -53,23 +61,6 @@
             icon="el-icon-remove-outline"
           >
             删除节点
-          </el-button>
-        </template>
-      </el-popconfirm>
-
-      <el-popconfirm
-        v-show="graphModel.nodes.length"
-        title="将删除所有节点，是否继续？"
-        @onConfirm="clearCanvas"
-      >
-        <template #reference>
-          <el-button
-            size="small"
-            type="danger"
-            plain
-            icon="el-icon-delete"
-          >
-            清空画布
           </el-button>
         </template>
       </el-popconfirm>

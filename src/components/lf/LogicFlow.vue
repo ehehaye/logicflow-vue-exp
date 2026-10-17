@@ -24,6 +24,8 @@ import _ from 'lodash';
 import { defineComponent } from 'vue';
 import '@logicflow/core/dist/index.css';
 import { Dagre } from '@logicflow/layout';
+import { Control } from '@logicflow/extension';
+import '@logicflow/extension/lib/style/index.css';
 import LogicFlowContext from './LogicFlowContext.vue';
 import { CenterEvents } from '@/components/lf/events';
 import { LogicFlow } from './model';
@@ -99,6 +101,8 @@ export default defineComponent({
     const container = this.resolveContainer();
 
     this.lf = this.createLogicFlow(container);
+    // control plugins 需要在 render 前初始化
+    this.setupPlugins();
     this.lf.once('graph:rendered', () => {
       this.setupAutoLayout();
       this.setupResizeObserver(container);
@@ -148,7 +152,7 @@ export default defineComponent({
     createLogicFlow(container) {
       const lf = new LogicFlow({
         container,
-        plugins: [Dagre],
+        plugins: [Dagre, Control],
         ...this.mergeOptions(),
       });
       registerNodes(lf);
@@ -181,6 +185,20 @@ export default defineComponent({
       }, RESIZE_DEBOUNCE_DELAY);
       this.resizeObserver = new ResizeObserver(handleResize);
       this.resizeObserver.observe(container);
+    },
+    setupPlugins() {
+      this.lf.extension.control.removeItem('undo');
+      this.lf.extension.control.removeItem('redo');
+      this.lf.extension.control.removeItem('reset');
+      this.lf.extension.control.addItem({
+        key: 'reset',
+        iconClass: 'lf-control-fit',
+        title: '适应屏幕',
+        text: '适应',
+        onClick: () => {
+          this.lf.fitView();
+        },
+      });
     },
     /**
      * 监听 graphData 与 options 变化，同步重新渲染与编辑配置。
