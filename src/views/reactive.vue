@@ -1,5 +1,5 @@
 <template>
-  <div class="tw-flex tw-w-full tw-flex-row">
+  <div class="tw-flex tw-w-full tw-flex-row tw-h-full">
     <LogicFlow>
       <PipelineReactive
         :nodes.sync="nodes"

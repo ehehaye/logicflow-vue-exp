@@ -28,7 +28,9 @@
         </div>
       </header>
 
-      <Component :is="activeView" />
+      <div class="app-content">
+        <Component :is="activeView" />
+      </div>
     </div>
   </main>
 </template>
