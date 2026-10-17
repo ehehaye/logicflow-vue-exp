@@ -8,9 +8,9 @@
 
 | 数据驱动 | 事件驱动 |
 | -------- | -------- |
-| ![数据驱动模式：业务 nodes 数组派生图结构，侧栏编辑实时同步画布](docs/pipeline-reactive.png) | ![事件驱动模式：直接操作 LogicFlow 图数据模型](docs/pipeline-classic.png) |
+| ![数据驱动模式：业务 nodes 数组派生图结构，选中节点后在侧栏编辑属性并查看 nodes JSON](docs/pipeline-reactive.png) | ![事件驱动模式：通过工具栏直接操作 LogicFlow 图数据模型，侧栏展示 graphData JSON](docs/pipeline-classic.png) |
 
-> 数据驱动模式：业务侧维护 `nodes` 数组，选中节点（蓝色高亮）后可在右侧栏编辑名称并实时同步到画布；事件驱动模式：同一套工具栏直接操作 LogicFlow 底层图数据。
+> 数据驱动模式：业务侧维护 `nodes` 数组，选中「构建产物」（蓝色高亮）后可在右侧栏编辑名称，并实时查看 `nodes` JSON；事件驱动模式：通过工具栏直接创建节点、操作 LogicFlow 底层图数据，右侧栏展示画布维护的 `graphData` JSON。
 
 ## 功能
 
@@ -19,7 +19,8 @@
   - **事件驱动**：直接操作 LogicFlow 底层图数据（节点 / 边模型），通过事件向外通知变更
 - 新增节点：默认追加到末节点下方并自动连线；有选中节点时支持「插到选中节点前 / 后」
 - 删除节点：自动把上游 × 下游交叉桥接，保持图连通
-- 清空画布、适应屏幕（自动 Dagre 布局）
+- 清空画布、适应屏幕（自动 Dagre 布局，Control 插件提供缩放 / 适应控件）
+- 侧栏数据预览：数据驱动展示 `nodes`、事件驱动展示 `graphData`，highlight.js 语法高亮
 - 连线只读：自定义边不可命中，仅作连线展示
 - 选中节点高亮：蓝色填充 + 白色文字，悬停描边高亮
 - 自定义节点 `step-node` 与边 `step-edge`
@@ -29,9 +30,9 @@
 | 类别     | 选型                                                          |
 | -------- | ------------------------------------------------------------- |
 | 框架     | Vue 2.7（当前实现，可低成本迁移 Vue 3）                       |
-| 流程引擎 | [LogicFlow](https://github.com/didi/LogicFlow) 2.x（`@logicflow/core` + `@logicflow/layout` 的 Dagre 布局） |
+| 流程引擎 | [LogicFlow](https://github.com/didi/LogicFlow) 2.x（`@logicflow/core` + `@logicflow/layout` 的 Dagre 布局 + `@logicflow/extension` 的 Control 控件） |
 | 构建工具 | Vite 7                                                        |
-| UI       | Element UI 2.x + Tailwind（`@tailwindcss/postcss7-compat`，类名前缀 `tw-`） |
+| UI       | Element UI 2.x + Tailwind（`@tailwindcss/postcss7-compat`，类名前缀 `tw-`）+ highlight.js |
 | 包管理器 | pnpm                                                          |
 
 ## 环境要求
