@@ -136,6 +136,36 @@
     font-weight: 600;
   }
 
+  /* ---------- 顶栏 GitHub 链接 ---------- */
+  .app-github-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    color: #5b6b85;
+    background: #f4f6fa;
+    border: 1px solid #e4eaf3;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .app-github-link:hover {
+    color: #1d2433;
+    background: #e9eef7;
+    border-color: #d3dcea;
+    transform: translateY(-1px);
+  }
+
+  .app-github-link:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
   /* ---------- 流水线工具栏 ---------- */
   .pipeline-toolbar {
     display: flex;

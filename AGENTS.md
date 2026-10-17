@@ -22,7 +22,7 @@
 ## Architecture
 
 - `src/main.js` — 应用入口：`Vue.use(ElementUI)`，导入 `element-ui/lib/theme-chalk/index.css` 与 `src/styles.css`，挂载根实例。
-- `src/App.vue` — 根组件：分段切换器（`.view-switch` 滑块控件）切换「数据驱动 / 事件驱动」，`.app-content` 撑满剩余高度，经 `<Component :is="activeView" />` 动态渲染 `views/reactive.vue`（默认）或 `views/classic.vue`。
+- `src/App.vue` — 根组件：分段切换器（`.view-switch` 滑块控件）切换「数据驱动 / 事件驱动」，右侧 GitHub 图标链接（`githubUrl`），`.app-content` 撑满剩余高度，经 `<Component :is="activeView" />` 动态渲染 `views/reactive.vue`（默认）或 `views/classic.vue`。
 - `src/views/reactive.vue` — 数据驱动视图：组合 `LogicFlow` + `PipelineReactive`，持有 `nodes`（`:nodes.sync`）与 `activeIndex`；侧栏 `el-input` 直接编辑选中节点的 `text`（`computed node` 取 `nodes[activeIndex]`），并通过 `CodePreviewer` 展示 `nodes` JSON。
 - `src/views/classic.vue` — 事件驱动视图：组合 `LogicFlow`（`:graphData.sync`）+ `PipelineClassic`，侧栏通过 `CodePreviewer` 展示画布维护的 `graphData` JSON。
 - `src/components/common/CodePreviewer.vue` — 只读代码预览组件（props：`code` / `language` / `showLineNumbers` / `title` / `maxHeight`）：highlight.js `lib/common` 语法高亮（指定语言未注册时降级自动检测），行号 gutter 横向滚动 `sticky` 吸附，标题栏 + 语言标签 + 一键复制（`navigator.clipboard`，非安全上下文回退 `execCommand`），代码区由 `el-scrollbar` 承载、限高通过 CSS 变量下发给内部 wrap。

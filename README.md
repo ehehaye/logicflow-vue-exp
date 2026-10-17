@@ -86,7 +86,7 @@ pnpm format:check
 ├── pnpm-lock.yaml
 └── src
     ├── main.js                    # 应用入口，挂载 Vue 实例
-    ├── App.vue                    # 根组件：双模式切换器
+    ├── App.vue                    # 根组件：双模式切换器 + GitHub 链接
     ├── styles.css                 # 全局样式（@layer components）
     ├── utils/index.js             # uuid 等工具
     ├── views
