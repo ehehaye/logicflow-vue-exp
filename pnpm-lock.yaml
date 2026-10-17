@@ -17,6 +17,9 @@ importers:
       element-ui:
         specifier: ^2.15.14
         version: 2.15.14(vue@2.7.16)
+      highlight.js:
+        specifier: ^11.12.0
+        version: 11.12.0
       lodash:
         specifier: ^4.18.1
         version: 4.18.1
@@ -676,6 +679,10 @@ packages:
 
   hex-color-regex@1.1.0:
     resolution: {integrity: sha512-l9sfDFsuqtOqKDsQdqrMRk0U85RZc0RtOR9yPI7mRVOa4FsR/BVnZ0shmQRM96Ji99kYZP/7hn1cedc1+ApsTQ==}
+
+  highlight.js@11.12.0:
+    resolution: {integrity: sha512-nbfWpyRMcMrPMmDwJB+dhX/eiaPKtc2RB+0QZskqJ3WjRA/FDS0e9hZrx8EC/lbEv8gXy98FcDbNa/dspAaJMg==}
+    engines: {node: '>=12.0.0'}
 
   hoist-non-react-statics@2.5.5:
     resolution: {integrity: sha512-rqcy4pJo55FTTLWt+bU8ukscqHeE/e9KWvsOW2b/a3afxQZhwkQdT1rPPCJ0rYXdj4vNcasY8zHTH+jF/qStxw==}
@@ -1651,6 +1658,8 @@ snapshots:
       function-bind: 1.1.2
 
   hex-color-regex@1.1.0: {}
+
+  highlight.js@11.12.0: {}
 
   hoist-non-react-statics@2.5.5: {}
 
