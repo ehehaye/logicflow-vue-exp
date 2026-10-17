@@ -35,6 +35,7 @@
         v-show="graphModel.nodes.length"
         title="将删除所有节点，是否继续？"
         @onConfirm="clearCanvas"
+        @confirm="clearCanvas"
       >
         <template #reference>
           <el-button
@@ -52,6 +53,7 @@
         v-show="selectedNode"
         title="将删除选中节点，是否继续？"
         @onConfirm="deleteSelectedNode"
+        @confirm="deleteSelectedNode"
       >
         <template #reference>
           <el-button
