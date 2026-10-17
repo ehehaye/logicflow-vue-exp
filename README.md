@@ -79,18 +79,21 @@ pnpm format:check
     ├── styles.css                 # 全局样式（@layer components）
     ├── utils/index.js             # uuid 等工具
     ├── views
-    │   ├── reactive.vue           # 数据驱动视图
-    │   └── classic.vue            # 事件驱动视图
-    └── components/lf
-        ├── LogicFlow.vue          # LogicFlow 通用封装
-        ├── LogicFlowContext.vue   # 画布实例 provide/inject 透传
-        ├── model.js               # LogicFlowPro（响应式 graphModel + getLastNode）
-        ├── events.js              # 图数据变更事件常量
-        ├── nodes/                 # 自定义节点 step-node（StepNode.js / index.js）
-        ├── edges/                 # 自定义边 step-edge（StepEdge.js / index.js）
-        └── scenes/
-            ├── PipelineClassic.vue    # 事件驱动场景（工具栏 + CRUD）
-            └── PipelineReactive.vue   # 数据驱动场景（mixin 复用 Classic 工具栏）
+    │   ├── reactive.vue           # 数据驱动视图（属性编辑 + nodes JSON）
+    │   └── classic.vue            # 事件驱动视图（graphData JSON）
+    └── components
+        ├── common
+        │   └── CodePreviewer.vue  # 只读代码预览（highlight.js 高亮 / 行号 / 复制）
+        └── lf
+            ├── LogicFlow.vue          # LogicFlow 通用封装（Dagre + Control）
+            ├── LogicFlowContext.vue   # 画布实例 provide/inject 透传
+            ├── model.js               # LogicFlowPro（响应式 graphModel + getLastNode）
+            ├── events.js              # 图数据变更事件常量
+            ├── nodes/                 # 自定义节点 step-node（StepNode.js / index.js）
+            ├── edges/                 # 自定义边 step-edge（StepEdge.js / index.js）
+            └── scenes/
+                ├── PipelineClassic.vue    # 事件驱动场景（工具栏 + CRUD）
+                └── PipelineReactive.vue   # 数据驱动场景（mixin 复用 Classic 工具栏）
 ```
 
 ## 使用说明
@@ -98,10 +101,12 @@ pnpm format:check
 1. 顶部开关切换「数据驱动 / 事件驱动」视图。
 2. 工具栏操作（由场景组件提供）：
    - **新增节点**：默认追加到末节点；下拉菜单可选「插到选中节点前 / 后」
-   - **适应屏幕**：自动 Dagre 布局并适配画布
    - **删除节点**：删除选中节点并桥接上下游
    - **清空画布**：清空所有节点
-3. 数据驱动视图：右侧「节点属性」侧栏可编辑选中节点名称，修改实时同步到画布。
+3. 画布控件（右上角，由 `@logicflow/extension` 的 Control 插件提供）：缩小 / 放大 / 适应屏幕；点击「适应」会先执行 Dagre 自动布局再适配画布。
+4. 侧栏：
+   - 数据驱动视图：「节点属性」可编辑选中节点名称并实时同步画布，下方展示业务 `nodes` JSON
+   - 事件驱动视图：展示画布维护的 `graphData` JSON
 
 ## 组件说明
 
@@ -116,6 +121,8 @@ pnpm format:check
 | 事件               | 载荷         | 说明                                       |
 | ------------------ | ------------ | ------------------------------------------ |
 | `update:graphData` | 图数据对象   | 图数据变更时向外同步（`_.cloneDeep`）        |
+
+> 内置 Dagre 布局与 Control 控件插件：Control 保留缩放并新增「适应」（先 Dagre 布局再 `fitView`）；初始化在 `graph:rendered` 事件后注册布局与数据监听，确保容器已就绪。
 
 ### `PipelineClassic.vue`（事件驱动场景）
 
@@ -140,6 +147,18 @@ pnpm format:check
 | 事件           | 载荷       | 说明             |
 | -------------- | ---------- | ---------------- |
 | `update:nodes` | 节点数组   | 业务节点变更时触发 |
+
+### `CodePreviewer.vue`（代码预览）
+
+只读代码展示组件，基于 highlight.js 语法高亮，支持行号（横向滚动吸附）、标题 / 语言标签与一键复制；代码区由 `el-scrollbar` 承载，可双向滚动。
+
+| 属性              | 类型             | 默认值  | 说明                                                         |
+| ----------------- | ---------------- | ------- | ------------------------------------------------------------ |
+| `code`            | String           | `''`    | 待展示的代码文本                                             |
+| `language`        | String           | `''`    | highlight.js 语言名 / 别名（如 `json`）；为空时自动检测       |
+| `showLineNumbers` | Boolean          | `true`  | 是否显示行号                                                 |
+| `title`           | String           | `''`    | 标题栏标题（如数据名），为空时仅展示语言标签                  |
+| `maxHeight`       | String \| Number | `480`   | 代码区最大高度（数字按 px 处理），为空则不限制                |
 
 ## 自定义节点 / 边
 
