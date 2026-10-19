@@ -193,7 +193,6 @@ export default defineComponent({
       this.lf.extension.control.addItem({
         key: 'reset',
         iconClass: 'lf-control-fit',
-        title: '适应屏幕',
         text: '适应',
         onClick: () => {
           this.lf.fitView();
